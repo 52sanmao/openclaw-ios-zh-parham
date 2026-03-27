@@ -76,12 +76,12 @@ struct CommandsCard: View {
 private struct CommandResultSheet: View {
     let result: CommandResult
     @Environment(\.dismiss) private var dismiss
+    @State private var copied = false
 
     var body: some View {
         NavigationStack {
             ScrollView {
                 VStack(alignment: .leading, spacing: Spacing.md) {
-                    // Status header
                     HStack(spacing: Spacing.xs) {
                         Image(systemName: result.isSuccess ? "checkmark.circle.fill" : "xmark.circle.fill")
                             .font(.title2)
@@ -98,21 +98,52 @@ private struct CommandResultSheet: View {
 
                     Divider()
 
-                    // Output
-                    Markdown(result.output)
-                        .markdownTheme(.openClaw)
+                    Text(result.output)
+                        .font(AppTypography.captionMono)
                         .textSelection(.enabled)
                         .frame(maxWidth: .infinity, alignment: .leading)
+                        .padding(Spacing.sm)
+                        .background(AppColors.neutral.opacity(0.08), in: RoundedRectangle(cornerRadius: AppRadius.sm))
+
+                    // Copy button inline
+                    Button {
+                        copyOutput()
+                    } label: {
+                        HStack(spacing: Spacing.xs) {
+                            Image(systemName: copied ? "checkmark" : "doc.on.doc")
+                            Text(copied ? "Copied" : "Copy Output")
+                        }
+                        .font(AppTypography.caption)
+                        .foregroundStyle(copied ? AppColors.success : AppColors.primaryAction)
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, Spacing.xs)
+                        .background(AppColors.tintedBackground(copied ? AppColors.success : AppColors.primaryAction), in: RoundedRectangle(cornerRadius: AppRadius.sm))
+                    }
                 }
                 .padding(Spacing.md)
             }
             .navigationTitle("Result")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button { copyOutput() } label: {
+                        Image(systemName: copied ? "checkmark" : "doc.on.doc")
+                    }
+                }
                 ToolbarItem(placement: .confirmationAction) {
                     Button("Done") { dismiss() }
                 }
             }
+        }
+    }
+
+    private func copyOutput() {
+        UIPasteboard.general.string = result.output
+        Haptics.shared.success()
+        copied = true
+        Task {
+            try? await Task.sleep(for: .seconds(2))
+            copied = false
         }
     }
 }

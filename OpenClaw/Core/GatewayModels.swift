@@ -31,6 +31,15 @@ struct ExecToolRequest: Encodable, Sendable {
     }
 }
 
+struct GatewayToolRequest: Encodable, Sendable {
+    let tool = "gateway"
+    let args: Args
+
+    struct Args: Encodable, Sendable {
+        let action: String
+    }
+}
+
 struct CronToolRequest: Encodable, Sendable {
     let tool: String
     let args: Input

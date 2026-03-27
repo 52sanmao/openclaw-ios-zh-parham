@@ -6,6 +6,7 @@ import os
 /// Abstraction over gateway networking — ViewModels depend on this, not concrete types.
 protocol GatewayClientProtocol: Sendable {
     func stats<Response: Decodable>(_ path: String) async throws -> Response
+    func statsPost<Body: Encodable, Response: Decodable>(_ path: String, body: Body) async throws -> Response
     func invoke<Body: Encodable, Response: Decodable>(_ body: Body) async throws -> Response
 }
 
@@ -37,6 +38,30 @@ struct GatewayClient: GatewayClientProtocol, Sendable {
         request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
 
         Self.logger.debug("GET /\(path)")
+
+        let (data, response) = try await URLSession.shared.data(for: request)
+        try validateHTTPResponse(response, data: data, path: path)
+
+        let decoder = JSONDecoder()
+        decoder.keyDecodingStrategy = .convertFromSnakeCase
+        return try decoder.decode(Response.self, from: data)
+    }
+
+    // MARK: - POST /stats/*  (plain JSON, snake_case, e.g. /stats/exec)
+
+    func statsPost<Body: Encodable, Response: Decodable>(_ path: String, body: Body) async throws -> Response {
+        let token = try requireToken()
+
+        guard let url = URL(string: "\(Self.baseURL.absoluteString)/\(path)") else {
+            throw GatewayError.invalidResponse
+        }
+        var request = URLRequest(url: url)
+        request.httpMethod = "POST"
+        request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        request.httpBody = try JSONEncoder().encode(body)
+
+        Self.logger.debug("POST /\(path)")
 
         let (data, response) = try await URLSession.shared.data(for: request)
         try validateHTTPResponse(response, data: data, path: path)

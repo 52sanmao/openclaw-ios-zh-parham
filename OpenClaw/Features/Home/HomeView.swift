@@ -16,7 +16,7 @@ struct HomeView: View {
         _systemVM     = State(initialValue: SystemHealthViewModel(repository: RemoteSystemHealthRepository(client: client)))
         _outreachVM   = State(initialValue: OutreachStatsViewModel(repository: RemoteOutreachRepository(client: client)))
         _blogVM       = State(initialValue: BlogPipelineViewModel(repository: RemoteBlogRepository(client: client)))
-        _commandsVM   = State(initialValue: CommandsViewModel(client: client))
+        _commandsVM   = State(initialValue: CommandsViewModel(client: client, cronRepository: RemoteCronRepository(client: client)))
         _tokenUsageVM = State(initialValue: TokenUsageViewModel(client: client))
     }
 
