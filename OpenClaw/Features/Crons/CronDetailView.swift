@@ -75,7 +75,7 @@ struct CronDetailView: View {
                 } else {
                     ForEach(vm.runs) { run in
                         CronRunRow(run: run, isExpanded: expandedRunId == run.id) {
-                            withAnimation(.easeInOut(duration: 0.25)) {
+                            withAnimation(.snappy(duration: 0.3)) {
                                 expandedRunId = expandedRunId == run.id ? nil : run.id
                             }
                         }

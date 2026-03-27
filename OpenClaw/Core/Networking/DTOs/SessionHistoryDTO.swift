@@ -19,6 +19,19 @@ struct SessionMessageDTO: Decodable, Sendable {
     let toolCallId: String?
     let toolName: String?
     let isError: Bool?
+    let usage: Usage?
+
+    struct Usage: Decodable, Sendable {
+        let inputTokens: Int?
+        let outputTokens: Int?
+        let totalTokens: Int?
+
+        enum CodingKeys: String, CodingKey {
+            case inputTokens = "input_tokens"
+            case outputTokens = "output_tokens"
+            case totalTokens = "total_tokens"
+        }
+    }
 
     struct ContentItem: Decodable, Sendable {
         let type: String
