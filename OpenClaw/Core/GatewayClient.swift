@@ -29,7 +29,9 @@ struct GatewayClient: GatewayClientProtocol, Sendable {
     func stats<Response: Decodable>(_ path: String) async throws -> Response {
         let token = try requireToken()
 
-        let url = Self.baseURL.appending(path: path)
+        guard let url = URL(string: "\(Self.baseURL.absoluteString)/\(path)") else {
+            throw GatewayError.invalidResponse
+        }
         var request = URLRequest(url: url)
         request.httpMethod = "GET"
         request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")

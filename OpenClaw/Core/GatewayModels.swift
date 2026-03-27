@@ -37,6 +37,7 @@ struct CronToolRequest: Encodable, Sendable {
 
     struct Input: Encodable, Sendable {
         let action: String
+        let includeDisabled: Bool?
     }
 
     init(args: Input) {

@@ -4,17 +4,20 @@ struct HomeView: View {
     @State private var systemVM: SystemHealthViewModel
     @State private var outreachVM: OutreachStatsViewModel
     @State private var blogVM: BlogPipelineViewModel
+    @State private var commandsVM: CommandsViewModel
+    @State private var tokenUsageVM: TokenUsageViewModel
 
     private let cronVM: CronSummaryViewModel
-
     private let keychain: KeychainService
 
     init(keychain: KeychainService, client: GatewayClient, cronVM: CronSummaryViewModel) {
         self.keychain = keychain
         self.cronVM = cronVM
-        _systemVM   = State(initialValue: SystemHealthViewModel(repository: RemoteSystemHealthRepository(client: client)))
-        _outreachVM = State(initialValue: OutreachStatsViewModel(repository: RemoteOutreachRepository(client: client)))
-        _blogVM     = State(initialValue: BlogPipelineViewModel(repository: RemoteBlogRepository(client: client)))
+        _systemVM     = State(initialValue: SystemHealthViewModel(repository: RemoteSystemHealthRepository(client: client)))
+        _outreachVM   = State(initialValue: OutreachStatsViewModel(repository: RemoteOutreachRepository(client: client)))
+        _blogVM       = State(initialValue: BlogPipelineViewModel(repository: RemoteBlogRepository(client: client)))
+        _commandsVM   = State(initialValue: CommandsViewModel(client: client))
+        _tokenUsageVM = State(initialValue: TokenUsageViewModel(client: client))
     }
 
     var body: some View {
@@ -22,7 +25,9 @@ struct HomeView: View {
             ScrollView {
                 VStack(spacing: Spacing.md) {
                     SystemHealthCard(vm: systemVM)
+                    CommandsCard(vm: commandsVM)
                     CronSummaryCard(vm: cronVM)
+                    TokenUsageCard(vm: tokenUsageVM)
                     OutreachStatsCard(vm: outreachVM)
                     BlogPipelineCard(vm: blogVM)
                 }
@@ -34,7 +39,8 @@ struct HomeView: View {
                 async let c: Void = cronVM.refresh()
                 async let o: Void = outreachVM.refresh()
                 async let b: Void = blogVM.refresh()
-                _ = await (s, c, o, b)
+                async let t: Void = tokenUsageVM.refresh()
+                _ = await (s, c, o, b, t)
                 Haptics.shared.refreshComplete()
             }
             .navigationTitle("Home")
@@ -54,6 +60,7 @@ struct HomeView: View {
             cronVM.start()
             outreachVM.start()
             blogVM.start()
+            tokenUsageVM.start()
         }
     }
 }

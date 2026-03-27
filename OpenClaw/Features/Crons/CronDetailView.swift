@@ -5,6 +5,8 @@ struct CronDetailView: View {
     let repository: CronDetailRepository
     @State private var expandedRunId: String?
     @State private var showRunConfirmation = false
+    @State private var showDisableConfirmation = false
+    @Environment(\.dismiss) private var dismiss
 
     var body: some View {
         List {
@@ -148,7 +150,7 @@ struct CronDetailView: View {
                 } else {
                     Toggle("", isOn: Binding(
                         get: { vm.job.enabled },
-                        set: { _ in Task { await vm.toggleEnabled() } }
+                        set: { _ in showDisableConfirmation = true }
                     ))
                     .labelsHidden()
                     .tint(AppColors.success)
@@ -183,5 +185,21 @@ struct CronDetailView: View {
             }
         }
         .padding(Spacing.md)
+        .alert(
+            vm.job.enabled ? "Disable Job?" : "Enable Job?",
+            isPresented: $showDisableConfirmation
+        ) {
+            Button(vm.job.enabled ? "Disable" : "Enable", role: vm.job.enabled ? .destructive : nil) {
+                Task {
+                    await vm.toggleEnabled()
+                    dismiss()
+                }
+            }
+            Button("Cancel", role: .cancel) {}
+        } message: {
+            Text(vm.job.enabled
+                 ? "\"\(vm.job.name)\" will stop running on its schedule until re-enabled."
+                 : "\"\(vm.job.name)\" will resume running on its schedule.")
+        }
     }
 }
