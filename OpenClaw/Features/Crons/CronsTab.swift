@@ -4,6 +4,9 @@ struct CronsTab: View {
     let vm: CronSummaryViewModel
     let detailRepository: CronDetailRepository
 
+    @State private var jobToRun: CronJob?
+    @State private var isRunning = false
+
     private var jobs: [CronJob] { vm.data ?? [] }
 
     var body: some View {
@@ -11,7 +14,7 @@ struct CronsTab: View {
             Group {
                 if !jobs.isEmpty {
                     List(jobs) { job in
-                        CronJobRow(job: job, onRun: { runJob(job) })
+                        CronJobRow(job: job, onRun: { jobToRun = job })
                             .background(
                                 NavigationLink("", destination: CronDetailView(
                                     vm: CronDetailViewModel(
@@ -48,12 +51,34 @@ struct CronsTab: View {
             }
             .navigationTitle("Cron Jobs")
             .navigationBarTitleDisplayMode(.large)
+            .alert("Run Manually?", isPresented: Binding(
+                get: { jobToRun != nil },
+                set: { if !$0 { jobToRun = nil } }
+            )) {
+                Button("Run", role: .destructive) {
+                    guard let job = jobToRun else { return }
+                    Task { await triggerRun(job) }
+                }
+                Button("Cancel", role: .cancel) { jobToRun = nil }
+            } message: {
+                if let job = jobToRun {
+                    Text("This will trigger \"\(job.name)\" immediately outside its normal schedule.")
+                }
+            }
         }
         .task { vm.start() }
     }
 
-    private func runJob(_ job: CronJob) {
-        Haptics.shared.success()
+    private func triggerRun(_ job: CronJob) async {
+        isRunning = true
+        do {
+            try await detailRepository.triggerRun(jobId: job.id)
+            Haptics.shared.success()
+            await vm.refresh()
+        } catch {
+            Haptics.shared.error()
+        }
+        isRunning = false
     }
 }
 
@@ -65,9 +90,7 @@ struct CronJobRow: View {
 
     var body: some View {
         HStack(alignment: .center, spacing: Spacing.sm) {
-            // Left: all job info stacked
             VStack(alignment: .leading, spacing: Spacing.xxs + 1) {
-                // Name + status
                 HStack(spacing: Spacing.xs) {
                     Circle()
                         .fill(job.enabled ? AppColors.success : AppColors.neutral)
@@ -83,12 +106,10 @@ struct CronJobRow: View {
                     CronStatusBadge(status: job.status, style: .small)
                 }
 
-                // Schedule
                 Text(job.scheduleDescription)
                     .font(AppTypography.caption)
                     .foregroundStyle(AppColors.neutral)
 
-                // Last + Next run
                 HStack(spacing: Spacing.sm) {
                     Label(job.lastRunFormatted, systemImage: "arrow.counterclockwise")
                         .font(AppTypography.micro)
@@ -99,7 +120,6 @@ struct CronJobRow: View {
                         .foregroundStyle(AppColors.neutral)
                 }
 
-                // Error count
                 if job.consecutiveErrors > 0 {
                     Label(
                         "\(job.consecutiveErrors) consecutive error\(job.consecutiveErrors == 1 ? "" : "s")",
@@ -110,7 +130,6 @@ struct CronJobRow: View {
                 }
             }
 
-            // Right: run button, vertically centered
             if let onRun {
                 Button {
                     onRun()
@@ -127,4 +146,3 @@ struct CronJobRow: View {
         .accessibilityElement(children: .combine)
     }
 }
-

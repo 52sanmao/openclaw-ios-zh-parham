@@ -4,6 +4,7 @@ struct CronDetailView: View {
     @State var vm: CronDetailViewModel
     let repository: CronDetailRepository
     @State private var expandedRunId: String?
+    @State private var showRunConfirmation = false
 
     var body: some View {
         List {
@@ -155,7 +156,7 @@ struct CronDetailView: View {
             }
 
             Button {
-                Task { await vm.triggerRun() }
+                showRunConfirmation = true
             } label: {
                 HStack(spacing: Spacing.xs) {
                     if vm.isTriggering {
@@ -172,6 +173,14 @@ struct CronDetailView: View {
             .background(AppColors.primaryAction, in: RoundedRectangle(cornerRadius: AppRadius.lg))
             .foregroundStyle(.white)
             .disabled(vm.isTriggering)
+            .alert("Run Manually?", isPresented: $showRunConfirmation) {
+                Button("Run", role: .destructive) {
+                    Task { await vm.triggerRun() }
+                }
+                Button("Cancel", role: .cancel) {}
+            } message: {
+                Text("This will trigger \"\(vm.job.name)\" immediately outside its normal schedule.")
+            }
         }
         .padding(Spacing.md)
     }
