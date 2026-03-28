@@ -8,10 +8,10 @@ Built with SwiftUI and Swift Concurrency. One dependency: [MarkdownUI](https://g
 
 | Tab | Description |
 |-----|-------------|
-| **Home** | Dashboard with 6 cards: System Health (live-polling ring gauges), Commands (quick actions with AI investigation), Cron Jobs (last/next run), Token Usage (today/yesterday/7d with model breakdown + tap for deep-dive analytics), Outreach Stats (grid), Blog Pipeline (published + stages). Settings via toolbar gear. |
+| **Home** | Dashboard with 6 cards: System Health (live-polling ring gauges), Commands (quick actions with AI investigation), Cron Jobs (last/next run), Token Usage (today/yesterday/7d with model breakdown + tap for deep-dive analytics), Outreach Stats (grid), Blog Pipeline (published + stages). Chat icon (left nav bar) pushes to Chat placeholder. Settings via toolbar gear. |
 | **Crons** | Segmented: **Cron Jobs** (full job list with status, schedule, manual run) and **History** (all recent runs across jobs, newest first). Tap job → detail view. Tap run → agent execution trace. |
 | **Mem & Skills** | Segmented: **Memory** (browse workspace files — memory files, daily logs, reference) and **Skills** (browse skill folders with SKILL.md docs, scripts, configs). Markdown files support paragraph-level comments submitted to the AI agent. Non-markdown files shown read-only in monospace. |
-| **Chat** | Coming soon — streaming conversations with your AI agent via SSE |
+| **Sessions** | Segmented: **Chat History** (main orchestrator session — newest messages first, full conversation trace) and **Subagents** (all spawned subagent sessions sorted by most recent, tap to view trace). |
 | **More** | Placeholder for future features |
 
 ### Home Dashboard Cards
@@ -53,6 +53,12 @@ Full step-by-step trace of agent execution with metadata pills (model, provider,
 - **Memory segment** — workspace files grouped by type (Memory Files, Daily Logs, Reference). Markdown rendered paragraph by paragraph. Add Figma-style comments on paragraphs, submit to the AI agent to perform edits. Page-level comment button (💬) to instruct the agent about the whole file.
 - **Skills segment** — browse skill folders (blog-researcher, skill-reddit, outreach-email, etc.). Each skill shows its file tree: documents (.md) open in the full paragraph viewer with comments, scripts and configs (.py, .json, etc.) open in a read-only monospace viewer with copy button. Skill-level comment button sends instructions to the agent — the agent reads `create-skill` first (best practices), then the target skill, before acting. All skill file reading via `skill-read` exec command.
 - **Comment system** — three levels: paragraph (inline), page (whole file), skill (whole skill). All share the same `CommentInputBar` and `CommentSheet` UI. Paragraph comments queue and batch-submit with swipe-to-delete. Page and skill comments submit immediately.
+
+### Sessions Tab
+
+- **Chat History** — the main orchestrator session (`agent:orchestrator:main`). Shows model, total tokens, cost, subagent count, status (running/idle). Tap to view the full conversation trace with newest messages first.
+- **Subagents** — all spawned subagent sessions sorted by most recent. Each shows display name, model, tokens, last updated. Tap to view execution trace (chronological order).
+- Uses `sessions_list` via `/tools/invoke` for the list, `sessions_history` for individual traces. Cron persistent sessions are filtered out (already covered in Crons tab).
 
 ## Getting Started
 

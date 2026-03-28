@@ -5,22 +5,14 @@ struct MoreTab: View {
 
     var body: some View {
         NavigationStack {
-            List {
-                // Future items go here
+            ContentUnavailableView {
+                Label("More", systemImage: "ellipsis.circle")
+            } description: {
+                Text("Additional features coming soon.")
+                    .font(AppTypography.body)
             }
-            .listStyle(.insetGrouped)
             .navigationTitle("More")
             .navigationBarTitleDisplayMode(.large)
-            .overlay {
-                if true {
-                    ContentUnavailableView {
-                        Label("More", systemImage: "ellipsis.circle")
-                    } description: {
-                        Text("Additional features coming soon.")
-                            .font(AppTypography.body)
-                    }
-                }
-            }
         }
     }
 }

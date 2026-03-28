@@ -34,14 +34,15 @@ View → LoadableViewModel<T> → Repository protocol → GatewayClientProtocol 
 
 ### Navigation
 
-`ContentView` (auth gate) → `MainTabView` (5 tabs): Home, Crons, Mem & Skills, Chat (placeholder), More (placeholder). Settings via Home toolbar gear.
+`ContentView` (auth gate) → `MainTabView` (5 tabs): Home, Crons, Mem & Skills, Sessions, More (placeholder). Chat accessible via Home nav bar left icon. Settings via Home toolbar gear.
 
-Shared state: `CronSummaryViewModel`, `CronDetailRepository`, `MemoryViewModel`, and `GatewayClient` created once in `MainTabView`, shared across tabs.
+Shared state: `CronSummaryViewModel`, `CronDetailRepository`, `MemoryViewModel`, `SessionsViewModel`, `SessionRepository`, and `GatewayClient` created once in `MainTabView`, shared across tabs.
 
 Depth:
-- Home → TokenUsageCard "View Details" → `TokenDetailView` (charts + pipeline breakdown)
+- Home → chat icon (left nav) → `ChatTab` (placeholder). Home → TokenUsageCard "View Details" → `TokenDetailView` (charts + pipeline breakdown).
 - Crons tab: segmented **Cron Jobs** / **History**. Cron Jobs → `CronDetailView` → `SessionTraceView`. History → `SessionTraceView` directly.
 - Mem & Skills tab: segmented **Memory** / **Skills**. Memory → `MemoryFileView`. Skills → `SkillDetailView` (file tree) → `MemoryFileView` (.md) or `ReadOnlyFileView` (scripts/config).
+- Sessions tab: segmented **Chat History** / **Subagents**. Both → `SessionTraceView`. Chat history shows newest first.
 
 ### Design system
 
@@ -117,7 +118,10 @@ All prompts sent to the agent follow these principles:
 - **Skill file commands**: `skills-list` (list folders), `skill-files` (list files in a skill, takes skill name as args), `skill-read` (read a file, takes "skillId relativePath" as args). All via `POST /stats/exec`.
 - **Cron list**: Pass `includeDisabled: true` to get all jobs including disabled ones.
 - **Cron schedules**: `kind: "cron"` has `expr`, `kind: "every"` has `everyMs` (no `expr`). DTO `expr` must be optional.
+- **Session list**: Tool is `sessions_list`. Response is wrapped: `{"count": N, "sessions": [...]}` — decode via `SessionListResponseDTO`, not a raw array. Returns all session types (main, cron persistent, subagents). Filter client-side by key prefix.
 - **Session history**: Tool is `sessions_history` (not `sessions`). Takes `sessionKey` (full format), not `sessionId` (bare UUID).
+- **Session types**: `agent:orchestrator:main` (one, the live chat), `agent:orchestrator:cron:<jobId>` (persistent cron sessions — skip, covered by Crons tab), `agent:orchestrator:subagent:<uuid>` (spawned subagents). Cron run sessions (`...:run:<uuid>`) do NOT appear in `sessions_list`.
+- **SessionTraceView dual init**: Accepts either `CronRun` + `CronDetailRepository` (cron context) or `sessionKey` + `SessionRepository` (sessions tab). A `SessionRepositoryAdapter` bridges the two. Pass `newestFirst: true` for chat history.
 - **Error responses**: Gateway in-envelope errors (200 OK with `{"status":"error"}`) surface as decode failures. Handle gracefully in VMs.
 - **System health polling**: `SystemHealthViewModel` subclasses `LoadableViewModel` and uses `startPolling(interval: 15)` — starts on `onAppear`, stops on `onDisappear`.
 - **Memory tools**: `memory_get` requires `sessionKey: "agent:orchestrator:main"`. Used for workspace memory files only — NOT for skill files (use `skill-read` instead).
