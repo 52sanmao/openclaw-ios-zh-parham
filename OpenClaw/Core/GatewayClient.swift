@@ -8,6 +8,7 @@ protocol GatewayClientProtocol: Sendable {
     func stats<Response: Decodable>(_ path: String) async throws -> Response
     func statsPost<Body: Encodable, Response: Decodable>(_ path: String, body: Body) async throws -> Response
     func invoke<Body: Encodable, Response: Decodable>(_ body: Body) async throws -> Response
+    func chatCompletion(_ request: ChatCompletionRequest, sessionKey: String) async throws -> ChatCompletionResponse
 }
 
 // MARK: - Implementation
@@ -96,6 +97,29 @@ struct GatewayClient: GatewayClientProtocol, Sendable {
         }
 
         return try JSONDecoder().decode(Response.self, from: jsonData)
+    }
+
+    // MARK: - POST /v1/chat/completions (with session key header)
+
+    func chatCompletion(_ body: ChatCompletionRequest, sessionKey: String) async throws -> ChatCompletionResponse {
+        let token = try requireToken()
+
+        guard let url = URL(string: "\(Self.baseURL.absoluteString)/v1/chat/completions") else {
+            throw GatewayError.invalidResponse
+        }
+        var request = URLRequest(url: url)
+        request.httpMethod = "POST"
+        request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        request.setValue(sessionKey, forHTTPHeaderField: "x-openclaw-session-key")
+        request.httpBody = try JSONEncoder().encode(body)
+
+        Self.logger.debug("POST /v1/chat/completions (session: \(sessionKey))")
+
+        let (data, response) = try await URLSession.shared.data(for: request)
+        try validateHTTPResponse(response, data: data, path: "v1/chat/completions")
+
+        return try JSONDecoder().decode(ChatCompletionResponse.self, from: data)
     }
 
     // MARK: - Private helpers

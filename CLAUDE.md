@@ -75,6 +75,17 @@ Sub-grid visual details (2pt padding, 6pt dots, 8pt indicator circles) are accep
 - **Prompt templates**: All agent prompts live in `Core/Prompts/PromptTemplates.swift` — one file, easy to tune. Use `ChatCompletionRequest`/`ChatCompletionResponse` for `/v1/chat/completions` calls.
 - **Memory annotation pattern**: Files are read-only in the UI. Users add comments on paragraphs, then submit as a batch to the agent. Never write files directly — always agent-mediated.
 
+## Prompt Engineering
+
+All prompts sent to the agent follow these principles:
+
+- **Never send full file content** — the agent has the file on disk. Send the path, line numbers, and a few lines of context (±2 lines around the target). The agent reads the file itself with the `read` tool. This saves tokens massively (14KB file → ~200 byte reference).
+- **Tell the agent what tools to use** — explicitly say "use the read tool", "use the write tool". Agents in fresh sessions may not know what's available unless told.
+- **Give the workspace root path** — `~/.openclaw/workspace/orchestrator/`. The agent needs to know where files live. Relative paths work for `read`/`write` but being explicit avoids ambiguity.
+- **Session key matters** — `/v1/chat/completions` without `x-openclaw-session-key` header starts a blank isolated session with NO workspace access. Must use `chatCompletion()` method with `sessionKey: "agent:orchestrator:main"` for the agent to have `read`/`write`/`edit` tools.
+- **Structure: task → steps → rules** — system prompt says what the task is, numbered steps to follow, then rules/constraints. User message has only the data (file path, line references, change requests).
+- **Context padding** — include 2 lines before and after the target section in a code block so the agent can locate the exact position even if line numbers shift slightly.
+
 ## Gateway API Gotchas
 
 - **Three client methods**: `stats()` for GET (snake_case decoder), `statsPost()` for POST to `/stats/*` (snake_case decoder), `invoke()` for POST to `/tools/invoke` (camelCase, no conversion). DTOs for `stats`/`statsPost` don't need `CodingKeys`; DTOs for `invoke` only need `CodingKeys` for nested snake_case fields.
@@ -86,4 +97,4 @@ Sub-grid visual details (2pt padding, 6pt dots, 8pt indicator circles) are accep
 - **Error responses**: Gateway in-envelope errors (200 OK with `{"status":"error"}`) surface as decode failures. Handle gracefully in VMs.
 - **System health polling**: `SystemHealthViewModel` has its own polling loop (15s) — starts on `onAppear`, stops on `onDisappear`. Not a `LoadableViewModel` subclass.
 - **Memory tools**: `memory_get` and `memory_search` require `sessionKey: "agent:orchestrator:main"` in the request body. Without it, the tool returns `disabled: true`. Config must have `memorySearch.extraPaths` pointing to workspace root for non-memory files (SOUL.md, AGENTS.md, etc.).
-- **Chat completions**: `POST /v1/chat/completions` with `model: "openclaw"` routes to the default agent. Uses `statsPost()` method (same base URL, snake_case decoder — works because OpenAI response keys are already camelCase).
+- **Chat completions**: Use `chatCompletion()` method (not `statsPost`) — it adds the `x-openclaw-session-key` header. Without this header, the agent starts a blank session with no tools or workspace. Four client methods total: `stats()`, `statsPost()`, `invoke()`, `chatCompletion()`.

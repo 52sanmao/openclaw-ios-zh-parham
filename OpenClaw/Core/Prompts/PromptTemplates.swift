@@ -4,45 +4,58 @@ import Foundation
 /// Edit this file to tune prompts — all templates in one place.
 enum PromptTemplates {
 
+    /// Context lines to include before/after the target section for safety.
+    private static let contextPadding = 2
+
     /// Build a prompt for editing a memory file based on user comments.
     static func editMemoryFile(
         path: String,
-        content: String,
+        fullText: String,
         comments: [MemoryComment]
     ) -> (system: String, user: String) {
+
         let system = """
-        You are editing a workspace memory file. Apply the user's comments precisely. \
+        You have a task: update a workspace markdown file based on user comments.
+        The workspace root is: ~/.openclaw/workspace/orchestrator/
+
+        Steps:
+        1. Read the file at the given path using the read tool
+        2. Apply each comment to the specified line range
+        3. Save the result using the write tool to the same path
+        4. Reply with a 2-3 bullet summary of changes
+
         Rules:
-        - Only modify sections mentioned in the comments
-        - Preserve all other content exactly as-is
-        - Maintain the existing markdown formatting and structure
-        - If a comment says to add content, insert it at the specified location
-        - If a comment says to remove or reword, do so cleanly
-        - Output the COMPLETE updated file content — not a diff, not a partial
-        - Do not add commentary — just output the file
+        - Only change lines mentioned in comments — preserve everything else
+        - Maintain markdown formatting and structure
+        - You MUST read then write the file — do not just output content
         """
 
-        var commentLines: [String] = []
+        let lines = fullText.components(separatedBy: "\n")
+        var commentBlocks: [String] = []
+
         for (index, comment) in comments.enumerated() {
-            commentLines.append("""
-            Comment \(index + 1) (lines \(comment.lineStart + 1)-\(comment.lineEnd + 1)):
-            Context: "\(comment.paragraphPreview)"
-            Request: \(comment.text)
+            let safeStart = max(0, comment.lineStart - contextPadding)
+            let safeEnd = min(lines.count - 1, comment.lineEnd + contextPadding)
+            let contextLines = lines[safeStart...safeEnd].joined(separator: "\n")
+
+            let lineLabel = comment.lineStart == comment.lineEnd
+                ? "line \(comment.lineStart + 1)"
+                : "lines \(comment.lineStart + 1)-\(comment.lineEnd + 1)"
+
+            commentBlocks.append("""
+            [\(index + 1)] \(lineLabel):
+            ```
+            \(contextLines)
+            ```
+            Change: \(comment.text)
             """)
         }
 
         let user = """
         File: `\(path)`
+        Total lines: \(lines.count)
 
-        ---
-        CURRENT CONTENT:
-        \(content)
-        ---
-
-        COMMENTS TO APPLY:
-        \(commentLines.joined(separator: "\n\n"))
-
-        Apply all comments and return the complete updated file.
+        \(commentBlocks.joined(separator: "\n\n"))
         """
 
         return (system: system, user: user)
@@ -50,29 +63,21 @@ enum PromptTemplates {
 
     /// Build a prompt for appending a note to today's daily log.
     static func appendDailyNote(
-        existingContent: String?,
-        note: String,
-        date: String
+        date: String,
+        note: String
     ) -> (system: String, user: String) {
         let system = """
-        You are appending to a daily memory log file. \
-        If the file already has content, add the new note under the appropriate section. \
-        If the file is empty, create a new daily log with a heading and the note. \
-        Use the format: `# Daily Log — YYYY-MM-DD` with `## Time` sections.
+        You have a task: append a note to today's daily memory log.
+
+        Steps:
+        1. Read the file at `memory/\(date).md` (may not exist yet)
+        2. If empty/missing, create with heading `# Daily Log — \(date)`
+        3. Add the note under an appropriate time section
+        4. Save using the write tool
+        5. Reply confirming what was added
         """
 
-        let existing = existingContent ?? ""
-        let user = """
-        File: `memory/\(date).md`
-
-        EXISTING CONTENT:
-        \(existing.isEmpty ? "(empty — create new file)" : existing)
-
-        NEW NOTE TO ADD:
-        \(note)
-
-        Output the complete updated file.
-        """
+        let user = "Add this note:\n\(note)"
 
         return (system: system, user: user)
     }

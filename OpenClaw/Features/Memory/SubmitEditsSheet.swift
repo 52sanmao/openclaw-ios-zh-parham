@@ -11,10 +11,16 @@ struct SubmitEditsSheet: View {
             List {
                 Section("Your Comments (\(vm.comments.count))") {
                     ForEach(vm.comments) { comment in
-                        VStack(alignment: .leading, spacing: Spacing.xxs) {
-                            Text("Lines \(comment.lineStart + 1)\u{2013}\(comment.lineEnd + 1)")
+                        VStack(alignment: .leading, spacing: Spacing.xs) {
+                            Text(comment.lineStart == comment.lineEnd
+                                 ? "Line \(comment.lineStart + 1)"
+                                 : "Lines \(comment.lineStart + 1)\u{2013}\(comment.lineEnd + 1)")
                                 .font(AppTypography.micro)
                                 .foregroundStyle(AppColors.neutral)
+                            Text(comment.paragraphPreview)
+                                .font(AppTypography.caption)
+                                .foregroundStyle(AppColors.neutral)
+                                .lineLimit(2)
                             Text(comment.text)
                                 .font(AppTypography.body)
                         }

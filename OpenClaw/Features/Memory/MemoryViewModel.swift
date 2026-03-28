@@ -91,7 +91,7 @@ final class MemoryViewModel {
             lineStart: lineStart,
             lineEnd: lineEnd,
             text: text,
-            paragraphPreview: String(preview.prefix(80))
+            paragraphPreview: String(preview.prefix(300))
         ))
         Haptics.shared.success()
     }
@@ -119,16 +119,16 @@ final class MemoryViewModel {
 
         let prompt = PromptTemplates.editMemoryFile(
             path: file.path,
-            content: content.text,
+            fullText: content.text,
             comments: comments
         )
 
         let request = ChatCompletionRequest(system: prompt.system, user: prompt.user)
 
         do {
-            let response: ChatCompletionResponse = try await client.statsPost(
-                "v1/chat/completions",
-                body: request
+            let response = try await client.chatCompletion(
+                request,
+                sessionKey: "agent:orchestrator:main"
             )
             submitResult = response.text ?? "Agent returned no content."
             Haptics.shared.success()
