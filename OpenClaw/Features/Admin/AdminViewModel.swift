@@ -21,51 +21,50 @@ final class AdminViewModel {
         defer { isLoading = false }
         error = nil
 
-        async let m = fetchModels()
-        async let a = fetchAgents()
-        async let c = fetchChannels()
-
-        let (models, agentList, channels) = await (m, a, c)
-        modelsConfig = models
-        agents = agentList
-        channelsStatus = channels
+        await loadModels()
+        await loadAgents()
+        await loadChannels()
     }
 
-    // MARK: - Fetchers (nonisolated for parallelism)
-
-    private nonisolated func fetchModels() async -> ModelsConfig? {
+    private func loadModels() async {
         do {
             let response: StatsExecResponse = try await client.statsPost(
                 "stats/exec", body: StatsExecRequest(command: "models-status")
             )
-            guard let data = response.stdout?.data(using: .utf8) else { return nil }
-            return ModelsConfig(dto: try JSONDecoder().decode(ModelsStatusDTO.self, from: data))
+            if let data = response.stdout?.data(using: .utf8) {
+                let dto = try JSONDecoder().decode(ModelsStatusDTO.self, from: data)
+                modelsConfig = ModelsConfig(dto: dto)
+            }
         } catch {
-            return nil
+            self.error = error
         }
     }
 
-    private nonisolated func fetchAgents() async -> [AgentInfo] {
+    private func loadAgents() async {
         do {
             let response: StatsExecResponse = try await client.statsPost(
                 "stats/exec", body: StatsExecRequest(command: "agents-list")
             )
-            guard let data = response.stdout?.data(using: .utf8) else { return [] }
-            return try JSONDecoder().decode([AgentDTO].self, from: data).map(AgentInfo.init)
+            if let data = response.stdout?.data(using: .utf8) {
+                let dtos = try JSONDecoder().decode([AgentDTO].self, from: data)
+                agents = dtos.map(AgentInfo.init)
+            }
         } catch {
-            return []
+            self.error = error
         }
     }
 
-    private nonisolated func fetchChannels() async -> ChannelsStatus? {
+    private func loadChannels() async {
         do {
             let response: StatsExecResponse = try await client.statsPost(
                 "stats/exec", body: StatsExecRequest(command: "channels-list")
             )
-            guard let data = response.stdout?.data(using: .utf8) else { return nil }
-            return ChannelsStatus(dto: try JSONDecoder().decode(ChannelsListDTO.self, from: data))
+            if let data = response.stdout?.data(using: .utf8) {
+                let dto = try JSONDecoder().decode(ChannelsListDTO.self, from: data)
+                channelsStatus = ChannelsStatus(dto: dto)
+            }
         } catch {
-            return nil
+            self.error = error
         }
     }
 }

@@ -32,11 +32,12 @@ final class ChatViewModel {
 
             var loaded: [ChatMessage] = []
             for message in dto.messages {
+                let ts = message.timestamp.map { Date(timeIntervalSince1970: Double($0) / 1000) } ?? Date()
                 switch message.role {
                 case "user":
                     let text = (message.content ?? []).compactMap(\.text).joined(separator: "\n")
                     if !text.isEmpty {
-                        loaded.append(ChatMessage(role: .user, content: text))
+                        loaded.append(ChatMessage(role: .user, content: text, timestamp: ts))
                     }
                 case "assistant":
                     let text = (message.content ?? [])
@@ -44,7 +45,7 @@ final class ChatViewModel {
                         .compactMap(\.text)
                         .joined(separator: "\n")
                     if !text.isEmpty {
-                        loaded.append(ChatMessage(role: .assistant, content: text))
+                        loaded.append(ChatMessage(role: .assistant, content: text, timestamp: ts))
                     }
                 default:
                     break

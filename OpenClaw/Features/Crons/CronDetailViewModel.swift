@@ -28,7 +28,7 @@ final class CronDetailViewModel {
         job: CronJob,
         repository: CronDetailRepository,
         client: GatewayClientProtocol,
-        store: InvestigationStoring = InvestigationStore(),
+        store: InvestigationStoring,
         onJobUpdated: @escaping () async -> Void
     ) {
         self.job = job

@@ -102,6 +102,7 @@ struct ChatView: View {
 
 private struct ChatBubble: View {
     let message: ChatMessage
+    @State private var copied = false
 
     private var isUser: Bool { message.role == .user }
 
@@ -138,6 +139,7 @@ private struct ChatBubble: View {
                             )
                     }
 
+                    // Footer: streaming indicator OR timestamp + copy
                     if message.isStreaming && !message.content.isEmpty {
                         HStack(spacing: Spacing.xxs) {
                             Circle()
@@ -146,6 +148,21 @@ private struct ChatBubble: View {
                             Text("Streaming")
                                 .font(AppTypography.nano)
                                 .foregroundStyle(AppColors.neutral)
+                        }
+                    } else if !message.content.isEmpty && !message.isStreaming {
+                        HStack(spacing: Spacing.sm) {
+                            Text(Formatters.relativeString(for: message.timestamp))
+                                .font(AppTypography.nano)
+                                .foregroundStyle(AppColors.neutral)
+
+                            Button {
+                                Formatters.copyToClipboard(message.content, copied: $copied)
+                            } label: {
+                                Image(systemName: copied ? "checkmark" : "doc.on.doc")
+                                    .font(AppTypography.nano)
+                                    .foregroundStyle(copied ? AppColors.success : AppColors.neutral)
+                            }
+                            .buttonStyle(.plain)
                         }
                     }
                 }

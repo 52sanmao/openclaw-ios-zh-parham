@@ -85,6 +85,7 @@ struct CronsTab: View {
                                 job: job,
                                 repository: detailRepository,
                                 client: client,
+                                store: InvestigationStore(),
                                 onJobUpdated: { await vm.refresh() }
                             ),
                             repository: detailRepository
