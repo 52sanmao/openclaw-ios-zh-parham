@@ -1,16 +1,16 @@
 import SwiftUI
 
-struct PipelinesPlaceholderTab: View {
+struct MorePlaceholderTab: View {
     var body: some View {
         NavigationStack {
             ContentUnavailableView {
-                Label("Pipelines", systemImage: "bolt.fill")
+                Label("More", systemImage: "ellipsis.circle")
                     .font(AppTypography.screenTitle)
             } description: {
-                Text("Live pipeline cards — Blog, Outreach, WhatsApp, Site Agent. Coming soon.")
+                Text("Additional features coming soon.")
                     .font(AppTypography.body)
             }
-            .navigationTitle("Pipelines")
+            .navigationTitle("More")
             .navigationBarTitleDisplayMode(.large)
         }
     }

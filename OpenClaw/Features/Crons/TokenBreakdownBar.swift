@@ -28,7 +28,7 @@ struct TokenBreakdownBar: View {
                 TokenLegendItem(color: AppColors.metricPrimary, label: "In", value: input)
                 TokenLegendItem(color: AppColors.metricPositive, label: "Out", value: output)
                 if hasReasoning {
-                    TokenLegendItem(color: AppColors.metricTertiary, label: "Reasoning", value: reasoning)
+                    TokenLegendItem(color: AppColors.metricTertiary, label: "Cache", value: reasoning)
                 }
                 Spacer()
             }

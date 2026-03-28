@@ -14,18 +14,3 @@ struct MemoryGetToolRequest: Encodable, Sendable {
         self.args = Args(path: path)
     }
 }
-
-struct MemorySearchToolRequest: Encodable, Sendable {
-    let tool = "memory_search"
-    let sessionKey: String
-    let args: Args
-
-    struct Args: Encodable, Sendable {
-        let query: String
-    }
-
-    init(query: String, sessionKey: String = "agent:orchestrator:main") {
-        self.sessionKey = sessionKey
-        self.args = Args(query: query)
-    }
-}

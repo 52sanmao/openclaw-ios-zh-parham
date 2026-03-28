@@ -4,6 +4,8 @@ import SwiftUI
 struct MemoryFileView: View {
     var vm: MemoryViewModel
     let file: MemoryFile
+    /// Optional skill entry — when set, uses skill-read instead of memory_get.
+    var skillEntry: SkillFileEntry?
     @State private var commentTarget: MemoryParagraph?
     @State private var showSubmitSheet = false
 
@@ -65,13 +67,19 @@ struct MemoryFileView: View {
         .sheet(isPresented: $showSubmitSheet) {
             SubmitEditsSheet(vm: vm, file: file)
         }
-        .task { await vm.loadFile(file) }
+        .task {
+            if let entry = skillEntry {
+                await vm.loadSkillFileContent(entry)
+            } else {
+                await vm.loadFile(file)
+            }
+        }
     }
 }
 
 // MARK: - Paragraph Row
 
-private struct ParagraphRow: View {
+struct ParagraphRow: View {
     let paragraph: MemoryParagraph
     let comments: [MemoryComment]
     let onAddComment: () -> Void
@@ -116,6 +124,7 @@ private struct ParagraphRow: View {
                                 .foregroundStyle(AppColors.neutral)
                         }
                         .buttonStyle(.plain)
+                        .accessibilityLabel("Remove comment")
                     }
                     .padding(Spacing.xs)
                     .background(AppColors.tintedBackground(AppColors.metricWarm, opacity: 0.08), in: RoundedRectangle(cornerRadius: AppRadius.sm))
@@ -142,7 +151,7 @@ private struct ParagraphRow: View {
 
 // MARK: - Add Comment Sheet
 
-private struct AddCommentSheet: View {
+struct AddCommentSheet: View {
     let paragraphPreview: String
     let onSubmit: (String) -> Void
     @State private var text = ""
@@ -170,14 +179,6 @@ private struct AddCommentSheet: View {
                 // Input bar — pinned to bottom
                 Divider()
                 HStack(alignment: .center, spacing: Spacing.sm) {
-                    // Microphone button (placeholder)
-                    Button {} label: {
-                        Image(systemName: "mic.fill")
-                            .font(.system(size: 20))
-                            .foregroundStyle(AppColors.neutral)
-                            .frame(width: 36, height: 36)
-                    }
-
                     // Text input
                     TextField("What should change here\u{2026}", text: $text, axis: .vertical)
                         .font(AppTypography.body)

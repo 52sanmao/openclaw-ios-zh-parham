@@ -7,6 +7,7 @@ struct MainTabView: View {
     private let cronDetailRepo: CronDetailRepository
 
     @State private var cronVM: CronSummaryViewModel
+    @State private var memoryVM: MemoryViewModel
 
     init(keychain: KeychainService) {
         self.keychain = keychain
@@ -14,6 +15,10 @@ struct MainTabView: View {
         self.client = client
         self.cronDetailRepo = RemoteCronDetailRepository(client: client)
         _cronVM = State(initialValue: CronSummaryViewModel(repository: RemoteCronRepository(client: client)))
+        _memoryVM = State(initialValue: MemoryViewModel(
+            repository: RemoteMemoryRepository(client: client),
+            client: client
+        ))
     }
 
     var body: some View {
@@ -26,19 +31,16 @@ struct MainTabView: View {
                 CronsTab(vm: cronVM, detailRepository: cronDetailRepo, client: client)
             }
 
-            Tab("Pipelines", systemImage: "bolt.fill") {
-                PipelinesPlaceholderTab()
-            }
-
-            Tab("Memory", systemImage: "brain") {
-                MemoryTab(vm: MemoryViewModel(
-                    repository: RemoteMemoryRepository(client: client),
-                    client: client
-                ))
+            Tab("Mem & Skills", systemImage: "brain") {
+                MemoryTab(vm: memoryVM)
             }
 
             Tab("Chat", systemImage: "bubble.left.and.bubble.right") {
                 ChatTab()
+            }
+
+            Tab("More", systemImage: "ellipsis.circle") {
+                MorePlaceholderTab()
             }
         }
     }

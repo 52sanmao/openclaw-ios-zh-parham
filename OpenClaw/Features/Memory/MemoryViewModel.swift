@@ -8,13 +8,17 @@ final class MemoryViewModel {
     var isLoadingFiles = false
     var fileError: Error?
 
+    var skills: [SkillFile] = []
+    var isLoadingSkills = false
+    var skillError: Error?
+
+    var skillFiles: [SkillFileEntry] = []
+    var isLoadingSkillFiles = false
+    var skillFilesError: Error?
+
     var fileContent: MemoryFileContent?
     var isLoadingContent = false
     var contentError: Error?
-
-    var searchResults: [MemorySearchResultDTO.Result] = []
-    var isSearching = false
-    var searchQuery = ""
 
     var comments: [MemoryComment] = []
 
@@ -43,6 +47,48 @@ final class MemoryViewModel {
         isLoadingFiles = false
     }
 
+    // MARK: - Skills List
+
+    func loadSkills() async {
+        isLoadingSkills = true
+        do {
+            skills = try await repository.listSkills()
+            skillError = nil
+        } catch {
+            skillError = error
+        }
+        isLoadingSkills = false
+    }
+
+    // MARK: - Skill Files
+
+    func loadSkillFiles(_ skill: SkillFile) async {
+        skillFiles = []
+        isLoadingSkillFiles = true
+        skillFilesError = nil
+        do {
+            skillFiles = try await repository.listSkillFiles(skillId: skill.id)
+        } catch {
+            skillFilesError = error
+        }
+        isLoadingSkillFiles = false
+    }
+
+    // MARK: - Skill File Content (via stats/exec)
+
+    func loadSkillFileContent(_ entry: SkillFileEntry) async {
+        fileContent = nil
+        isLoadingContent = true
+        contentError = nil
+        do {
+            let text = try await repository.readSkillFile(skillId: entry.skillId, relativePath: entry.id)
+            fileContent = MemoryFileContent(path: entry.absolutePath, text: text)
+        } catch {
+            contentError = error
+        }
+        isLoadingContent = false
+    }
+
     // MARK: - File Content
 
     func loadFile(_ file: MemoryFile) async {
@@ -63,23 +109,6 @@ final class MemoryViewModel {
             contentError = error
         }
         isLoadingContent = false
-    }
-
-    // MARK: - Search
-
-    func search() async {
-        let query = searchQuery.trimmingCharacters(in: .whitespaces)
-        guard !query.isEmpty else {
-            searchResults = []
-            return
-        }
-        isSearching = true
-        do {
-            searchResults = try await repository.search(query: query)
-        } catch {
-            searchResults = []
-        }
-        isSearching = false
     }
 
     // MARK: - Comments
@@ -142,10 +171,14 @@ final class MemoryViewModel {
 
 enum MemoryError: LocalizedError {
     case fileNotFound(String)
+    case commandFailed(command: String, exitCode: Int, stderr: String)
 
     var errorDescription: String? {
         switch self {
-        case .fileNotFound(let path): "File not found: \(path)"
+        case .fileNotFound(let path):
+            "File not found: \(path)"
+        case .commandFailed(let command, let exitCode, let stderr):
+            "Command '\(command)' failed (exit \(exitCode))\(stderr.isEmpty ? "" : ": \(stderr)")"
         }
     }
 }

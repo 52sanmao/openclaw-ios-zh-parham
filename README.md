@@ -1,6 +1,6 @@
 # OpenClaw
 
-A native iOS control room for the OpenClaw AI gateway. Monitor system health, run commands, manage cron jobs, inspect agent execution traces, track token usage, outreach metrics, and your blog pipeline — all from your phone.
+A native iOS control room for the OpenClaw AI gateway. Monitor system health, run commands, manage cron jobs, inspect agent execution traces, track token usage, browse agent memory and skills — all from your phone.
 
 Built with SwiftUI and Swift Concurrency. One dependency: [MarkdownUI](https://github.com/gonzalezreal/swift-markdown-ui) for rendering LLM markdown output.
 
@@ -8,28 +8,35 @@ Built with SwiftUI and Swift Concurrency. One dependency: [MarkdownUI](https://g
 
 | Tab | Description |
 |-----|-------------|
-| **Home** | Dashboard with 6 cards: System Health (live-polling ring gauges), Commands (quick actions), Cron Jobs (last/next run), Token Usage (today/yesterday/7d with model breakdown), Outreach Stats (grid), Blog Pipeline (published + stages). Settings via toolbar gear. |
-| **Crons** | Full job list with status badges, human-readable schedules, last/next run times, manual run button with confirmation. Tap → detail view → tap a run → agent execution trace. |
-| **Pipelines** | Coming soon — live per-pipeline cards (Blog, Outreach, WhatsApp, Site Agent) |
-| **Memory** | Browse workspace files (MEMORY.md, SOUL.md, daily logs, etc.) with markdown rendering. Add Figma-style comments on paragraphs, then submit to the AI agent to perform edits. Semantic search across all memory. |
+| **Home** | Dashboard with 6 cards: System Health (live-polling ring gauges), Commands (quick actions with AI investigation), Cron Jobs (last/next run), Token Usage (today/yesterday/7d with model breakdown + tap for deep-dive analytics), Outreach Stats (grid), Blog Pipeline (published + stages). Settings via toolbar gear. |
+| **Crons** | Segmented: **Cron Jobs** (full job list with status, schedule, manual run) and **History** (all recent runs across jobs, newest first). Tap job → detail view. Tap run → agent execution trace. |
+| **Mem & Skills** | Segmented: **Memory** (browse workspace files — memory files, daily logs, reference) and **Skills** (browse skill folders with SKILL.md docs, scripts, configs). Markdown files support paragraph-level comments submitted to the AI agent. Non-markdown files shown read-only in monospace. |
 | **Chat** | Coming soon — streaming conversations with your AI agent via SSE |
+| **More** | Placeholder for future features |
 
 ### Home Dashboard Cards
 
 - **System Health** — CPU, RAM, Disk ring gauges with auto-polling every 15s (stops when not on Home tab). Uptime + load average.
-- **Commands** — 6 quick action buttons (Doctor, Tail Logs, Security Audit, Backup, etc.) + "Show More" for 6 more. Each confirms before running, shows loading, then displays result in a modal with copy button.
+- **Commands** — 6 quick action buttons (Doctor, Tail Logs, Security Audit, Backup, etc.) + "Show More" for 6 more. Each confirms before running, shows result in a modal with copy + "Investigate with AI" button. The agent analyses output and fixes issues if possible.
 - **Cron Summary** — Last run status + next upcoming run at a glance.
-- **Token Usage** — Segmented control (Today/Yesterday/7 Days). Total tokens, cost, proportional bar (input/output/cache read/cache write), request counts (total/thinking/tool), collapsible per-model breakdown.
+- **Token Usage** — Segmented control (Today/Yesterday/7 Days). Total tokens, cost, proportional bar (input/output/cache read/cache write), request counts (total/thinking/tool), collapsible per-model breakdown. Tap "View Details" for deep-dive analytics with donut chart, cache efficiency gauge, cost-by-model bar chart, expanded per-model breakdowns, and per-pipeline token attribution.
 - **Outreach Stats** — 6-cell grid with leads, channels, conversions.
 - **Blog Pipeline** — Published count, active pipeline stage pills, last published link.
 
 ### Cron Detail View
 
-- **Header** — status badge, enable/disable toggle (with confirmation + auto-navigate back), "Run Now" button (with confirmation)
+- **Header** — status badge, enable/disable toggle (with confirmation), "Run Now" button (with confirmation)
 - **Schedule** — human-readable frequency, raw cron expression, timezone
 - **Timing** — last run with status + error message, next run with absolute date, consecutive errors
 - **Investigate with AI** — when a job has errors, a bold action button sends the error to the orchestrator agent. The agent checks logs, diagnoses root cause, and fixes the issue if possible. Shows live elapsed timer during investigation, then a structured report (Status/Root Cause/Action Taken/Impact) with copy button. Latest investigation saved locally per job — "Last investigated X ago" link to reopen without re-running.
-- **Run History** — paginated (20 per page). Each entry: status, time, duration, model badge, total tokens, token breakdown bar (input/output/reasoning). Tap to expand markdown summary. Tap row to open trace.
+- **Run History** — paginated (20 per page). Each entry: status, time, duration, model badge, total tokens, token breakdown bar (input/output/cache). Tap to expand markdown summary. Tap row to open trace.
+
+### Token Detail Page
+
+- **Summary Grid** — 2-column metrics: total tokens, cost, input, output, cache read, cache write, requests, tool use
+- **Charts** — donut chart (token type split), cache hit rate ring gauge, cost-by-model horizontal bar chart
+- **By Model** — expanded cards per model with full token breakdown bars, thinking/tool/cache stats, cost (or "Included" for Copilot models)
+- **By Pipeline** — client-side aggregation of cron run tokens. Proportional bars showing each pipeline's share of total usage. Blog jobs grouped into one pipeline.
 
 ### Agent Execution Trace
 
@@ -41,13 +48,10 @@ Full step-by-step trace of agent execution with metadata pills (model, provider,
 - **Tool results** — stdout/stderr output
 - **Text responses** — final agent output (markdown)
 
-### Memory Tab
+### Mem & Skills Tab
 
-- **File browser** — workspace files grouped by type (Context Files, Daily Logs, Reference)
-- **Search** — semantic/full-text search across all memory files
-- **File viewer** — markdown rendered paragraph by paragraph with MarkdownUI
-- **Comment annotations** — tap any paragraph to add a comment (Figma-style). Comments show inline as orange cards.
-- **Submit to agent** — review all comments, submit as a structured prompt to the AI agent via `/v1/chat/completions`. Agent performs the edits in its sandbox. View the response as markdown.
+- **Memory segment** — workspace files grouped by type (Memory Files, Daily Logs, Reference). Markdown rendered paragraph by paragraph. Add Figma-style comments on paragraphs, submit to the AI agent to perform edits.
+- **Skills segment** — browse skill folders (blog-researcher, skill-reddit, outreach-email, etc.). Each skill shows its file tree: documents (.md) open in the full paragraph viewer with comments, scripts and configs (.py, .json, etc.) open in a read-only monospace viewer with copy button. All skill file reading via `skill-read` exec command.
 
 ## Getting Started
 
@@ -65,10 +69,10 @@ All requests go to `https://api.appwebdev.co.uk` with `Authorization: Bearer <to
 | GET | `/stats/system` | CPU, RAM, disk, uptime, load |
 | GET | `/stats/outreach` | Leads, emails, WhatsApp, conversions |
 | GET | `/stats/blog` | Published count, pipeline stages |
-| GET | `/stats/tokens?period=` | Token usage with model breakdown |
+| GET | `/stats/tokens?period=` | Token usage with full model breakdown |
 | POST | `/stats/exec` | Run predefined safe commands (allowlisted) |
 | POST | `/tools/invoke` | Gateway tool calls (see below) |
-| POST | `/v1/chat/completions` | Send prompts to agent (used for memory edits) |
+| POST | `/v1/chat/completions` | Send prompts to agent (used for memory edits, investigations) |
 
 ### Tool Actions (via /tools/invoke)
 
@@ -81,18 +85,17 @@ All requests go to `https://api.appwebdev.co.uk` with `Authorization: Bearer <to
 | `gateway` | `restart` | — | Restart gateway process |
 | `sessions_history` | — | `sessionKey`, `limit`, `includeTools` | Agent execution trace |
 | `memory_get` | — | `path`, `sessionKey` | Read workspace file content |
-| `memory_search` | — | `query`, `sessionKey` | Semantic/FTS search across memory |
 
 ### Stats Exec Commands (via /stats/exec)
 
-Predefined server-side allowlist: `doctor`, `status`, `logs`, `security-audit`, `backup`, `channels-status`, `config-validate`, `memory-reindex`, `session-cleanup`, `plugin-update`.
+Predefined server-side allowlist: `doctor`, `status`, `logs`, `security-audit`, `backup`, `channels-status`, `config-validate`, `memory-reindex`, `session-cleanup`, `plugin-update`, `memory-list`, `skills-list`, `skill-files` (takes skill name), `skill-read` (takes "skillId relativePath").
 
 ### Gateway Config Required
 
 - `tools.sessions.visibility = "all"` — allows reading cron run session traces
-- `tools.profile = "full"` — enables sessions_history, sessions_list, memory_get, memory_search
+- `tools.profile = "full"` — enables sessions_history, sessions_list, memory_get
 - `memorySearch.extraPaths` — must include workspace root for accessing all `.md` files
-- `gateway.http.endpoints.chatCompletions.enabled = true` — for agent-mediated memory edits
+- `gateway.http.endpoints.chatCompletions.enabled = true` — for agent-mediated edits and investigations
 
 ## Requirements
 
