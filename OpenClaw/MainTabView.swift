@@ -35,12 +35,15 @@ struct MainTabView: View {
                 MemoryTab(vm: memoryVM)
             }
 
-            Tab("Chat", systemImage: "bubble.left.and.bubble.right") {
-                ChatTab()
+            Tab("Sessions", systemImage: "bubble.left.and.text.bubble.right") {
+                SessionsView(
+                    vm: SessionsViewModel(repository: RemoteSessionRepository(client: client)),
+                    repository: RemoteSessionRepository(client: client)
+                )
             }
 
             Tab("More", systemImage: "ellipsis.circle") {
-                MorePlaceholderTab()
+                MoreTab(client: client)
             }
         }
     }

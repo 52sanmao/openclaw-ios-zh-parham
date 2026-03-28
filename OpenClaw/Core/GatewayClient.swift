@@ -96,7 +96,13 @@ struct GatewayClient: GatewayClientProtocol, Sendable {
             throw GatewayError.emptyContent
         }
 
-        return try JSONDecoder().decode(Response.self, from: jsonData)
+        do {
+            return try JSONDecoder().decode(Response.self, from: jsonData)
+        } catch {
+            Self.logger.error("invoke decode failed: \(error.localizedDescription)")
+            Self.logger.debug("invoke raw JSON (first 500): \(String(text.prefix(500)))")
+            throw error
+        }
     }
 
     // MARK: - POST /v1/chat/completions (with session key header)

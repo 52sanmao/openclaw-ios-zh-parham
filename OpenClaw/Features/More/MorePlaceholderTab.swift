@@ -1,17 +1,26 @@
 import SwiftUI
 
-struct MorePlaceholderTab: View {
+struct MoreTab: View {
+    let client: GatewayClientProtocol
+
     var body: some View {
         NavigationStack {
-            ContentUnavailableView {
-                Label("More", systemImage: "ellipsis.circle")
-                    .font(AppTypography.screenTitle)
-            } description: {
-                Text("Additional features coming soon.")
-                    .font(AppTypography.body)
+            List {
+                // Future items go here
             }
+            .listStyle(.insetGrouped)
             .navigationTitle("More")
             .navigationBarTitleDisplayMode(.large)
+            .overlay {
+                if true {
+                    ContentUnavailableView {
+                        Label("More", systemImage: "ellipsis.circle")
+                    } description: {
+                        Text("Additional features coming soon.")
+                            .font(AppTypography.body)
+                    }
+                }
+            }
         }
     }
 }

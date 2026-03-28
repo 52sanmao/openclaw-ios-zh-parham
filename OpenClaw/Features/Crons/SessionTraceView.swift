@@ -1,41 +1,48 @@
 import SwiftUI
 
 struct SessionTraceView: View {
-    let run: CronRun
-    let repository: CronDetailRepository
-    var jobName: String?
+    let title: String
+    let subtitle: String?
+    let sessionKey: String
+    let repository: SessionRepository
+    let newestFirst: Bool
 
     @State private var trace: SessionTrace?
     @State private var isLoading = false
     @State private var error: Error?
     @State private var expandedStepId: String?
 
+    /// Init from a cron run (existing usage — oldest first).
+    init(run: CronRun, repository: CronDetailRepository, jobName: String? = nil) {
+        self.title = jobName ?? "Run Trace"
+        self.subtitle = run.runAtAbsolute
+        self.sessionKey = run.sessionKey ?? run.sessionId ?? ""
+        self.repository = SessionRepositoryAdapter(cronRepo: repository)
+        self.newestFirst = false
+    }
+
+    /// Init from a session key directly (sessions tab).
+    init(sessionKey: String, title: String, subtitle: String? = nil, newestFirst: Bool = false, repository: SessionRepository) {
+        self.title = title
+        self.subtitle = subtitle
+        self.sessionKey = sessionKey
+        self.repository = repository
+        self.newestFirst = newestFirst
+    }
+
     var body: some View {
         List {
-            // Run summary header
+            // Header
             Section {
-                HStack(spacing: Spacing.sm) {
-                    CronStatusDot(status: run.status)
-                    VStack(alignment: .leading, spacing: Spacing.xxs) {
-                        if let jobName {
-                            Text(jobName)
-                                .font(AppTypography.body)
-                                .fontWeight(.semibold)
-                        }
-                        Text(run.runAtAbsolute)
-                            .font(jobName != nil ? AppTypography.caption : AppTypography.body)
-                            .fontWeight(jobName != nil ? .regular : .medium)
-                            .foregroundStyle(jobName != nil ? AppColors.neutral : .primary)
-                        HStack(spacing: Spacing.sm) {
-                            Label(run.durationFormatted, systemImage: "clock")
-                                .font(AppTypography.micro)
-                                .foregroundStyle(AppColors.neutral)
-                            if let model = run.model {
-                                ModelPill(model: model)
-                            }
-                        }
+                VStack(alignment: .leading, spacing: Spacing.xxs) {
+                    Text(title)
+                        .font(AppTypography.body)
+                        .fontWeight(.semibold)
+                    if let subtitle {
+                        Text(subtitle)
+                            .font(AppTypography.caption)
+                            .foregroundStyle(AppColors.neutral)
                     }
-                    Spacer()
                 }
             }
 
@@ -46,7 +53,7 @@ struct SessionTraceView: View {
                 }
             } else if let trace {
                 Section {
-                    ForEach(trace.steps) { step in
+                    ForEach(newestFirst ? trace.steps.reversed() : trace.steps) { step in
                         TraceStepRow(
                             step: step,
                             isExpanded: expandedStepId == step.id
@@ -78,9 +85,9 @@ struct SessionTraceView: View {
                 Section("Execution Trace") {
                     CardErrorView(error: error)
                 }
-            } else if run.sessionId == nil {
+            } else if sessionKey.isEmpty {
                 Section("Execution Trace") {
-                    Text("No session data available for this run.")
+                    Text("No session data available.")
                         .font(AppTypography.body)
                         .foregroundStyle(AppColors.neutral)
                         .frame(maxWidth: .infinity, minHeight: 60)
@@ -88,22 +95,29 @@ struct SessionTraceView: View {
             }
         }
         .listStyle(.insetGrouped)
-        .navigationTitle("Run Trace")
+        .navigationTitle("Trace")
         .navigationBarTitleDisplayMode(.inline)
         .task {
-            await loadTrace()
+            guard !sessionKey.isEmpty else { return }
+            isLoading = true
+            do {
+                trace = try await repository.fetchTrace(sessionKey: sessionKey, limit: 100)
+                error = nil
+            } catch {
+                self.error = error
+            }
+            isLoading = false
         }
     }
+}
 
-    private func loadTrace() async {
-        guard let sessionKey = run.sessionKey ?? run.sessionId else { return }
-        isLoading = true
-        do {
-            trace = try await repository.fetchSessionTrace(sessionKey: sessionKey, limit: 100)
-            error = nil
-        } catch {
-            self.error = error
-        }
-        isLoading = false
+/// Adapter so CronDetailRepository can be used where SessionRepository is expected.
+private struct SessionRepositoryAdapter: SessionRepository {
+    let cronRepo: CronDetailRepository
+
+    func fetchSessions(limit: Int) async throws -> [SessionEntry] { [] }
+
+    func fetchTrace(sessionKey: String, limit: Int) async throws -> SessionTrace {
+        try await cronRepo.fetchSessionTrace(sessionKey: sessionKey, limit: limit)
     }
 }
