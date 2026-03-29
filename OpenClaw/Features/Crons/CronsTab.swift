@@ -40,9 +40,13 @@ struct CronsTab: View {
                     historyList
                 }
             }
-            .navigationTitle("Crons")
-            .navigationBarTitleDisplayMode(.large)
+            .navigationBarTitleDisplayMode(.inline)
             .toolbar {
+                ToolbarItem(placement: .principal) {
+                    DetailTitleView(title: "Crons") {
+                        cronSubtitle
+                    }
+                }
                 ToolbarItem(placement: .primaryAction) {
                     NavigationLink {
                         ScheduleTimelineView(jobs: jobs)
@@ -75,6 +79,25 @@ struct CronsTab: View {
                 )
                 historyVM = hvm
                 Task { await hvm.loadRuns() }
+            }
+        }
+    }
+
+    // MARK: - Subtitle
+
+    @ViewBuilder
+    private var cronSubtitle: some View {
+        if !jobs.isEmpty {
+            let failed = jobs.filter { $0.status == .failed }.count
+            HStack(spacing: Spacing.xs) {
+                Text("\(jobs.count) jobs")
+                    .font(AppTypography.micro)
+                    .foregroundStyle(AppColors.neutral)
+                if failed > 0 {
+                    Text("\u{00B7} \(failed) failed")
+                        .font(AppTypography.micro)
+                        .foregroundStyle(AppColors.danger)
+                }
             }
         }
     }

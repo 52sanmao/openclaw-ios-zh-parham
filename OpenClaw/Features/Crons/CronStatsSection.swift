@@ -6,34 +6,23 @@ struct CronStatsSection: View {
 
     var body: some View {
         Section("Run Stats") {
-            // Primary model
-            if let model = stats.primaryModel {
-                LabeledContent("Model") {
-                    ModelPill(model: model)
-                }
-            }
-
-            // Average duration
             LabeledContent("Avg Duration") {
                 Text(stats.avgDurationFormatted)
                     .font(AppTypography.captionMono)
             }
 
-            // Average tokens
             LabeledContent("Avg Tokens") {
                 Text(Formatters.tokens(stats.avgTokens))
                     .font(AppTypography.captionMono)
                     .foregroundStyle(AppColors.metricPrimary)
             }
 
-            // Total tokens
             LabeledContent("Total Tokens") {
                 Text(Formatters.tokens(stats.totalTokens))
                     .font(AppTypography.captionMono)
                     .foregroundStyle(AppColors.metricPrimary)
             }
 
-            // Success rate
             LabeledContent("Success Rate") {
                 HStack(spacing: Spacing.xs) {
                     Text(String(format: "%.0f%%", stats.successRate * 100))
@@ -45,7 +34,6 @@ struct CronStatsSection: View {
                 }
             }
 
-            // Success rate bar
             GeometryReader { geo in
                 RoundedRectangle(cornerRadius: 3)
                     .fill(AppColors.neutral.opacity(0.15))

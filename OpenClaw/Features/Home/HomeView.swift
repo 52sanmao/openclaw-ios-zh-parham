@@ -49,9 +49,13 @@ struct HomeView: View {
                 _ = await (s, c, o, b, t)
                 Haptics.shared.refreshComplete()
             }
-            .navigationTitle("Home")
-            .navigationBarTitleDisplayMode(.large)
+            .navigationBarTitleDisplayMode(.inline)
             .toolbar {
+                ToolbarItem(placement: .principal) {
+                    DetailTitleView(title: "Home") {
+                        homeSubtitle
+                    }
+                }
                 ToolbarItem(placement: .navigationBarLeading) {
                     NavigationLink {
                         ChatTab(client: client)
@@ -82,6 +86,31 @@ struct HomeView: View {
             outreachVM.start()
             blogVM.start()
             tokenUsageVM.start()
+        }
+    }
+
+    @ViewBuilder
+    private var homeSubtitle: some View {
+        let cronJobs = cronVM.data ?? []
+        let failedCrons = cronJobs.filter { $0.status == .failed }.count
+        let systemOk = systemVM.data != nil && systemVM.error == nil
+
+        if failedCrons > 0 {
+            Text("\(failedCrons) cron failure\(failedCrons == 1 ? "" : "s")")
+                .font(AppTypography.micro)
+                .foregroundStyle(AppColors.danger)
+        } else if !systemOk && systemVM.error != nil {
+            Text("System unavailable")
+                .font(AppTypography.micro)
+                .foregroundStyle(AppColors.warning)
+        } else if cronJobs.isEmpty {
+            Text("Loading\u{2026}")
+                .font(AppTypography.micro)
+                .foregroundStyle(AppColors.neutral)
+        } else {
+            Text("All systems OK")
+                .font(AppTypography.micro)
+                .foregroundStyle(AppColors.success)
         }
     }
 }

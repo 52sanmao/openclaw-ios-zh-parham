@@ -43,7 +43,21 @@ struct ProviderIcon: View {
     }
 
     static func extractProvider(from model: String) -> String {
-        guard model.contains("/") else { return model }
-        return String(model.split(separator: "/").first ?? "")
+        // Explicit prefix: "anthropic/claude-sonnet-4-6"
+        if model.contains("/") {
+            return String(model.split(separator: "/").first ?? "")
+        }
+        // Infer from model name
+        let lower = model.lowercased()
+        if lower.contains("claude") || lower.contains("haiku") || lower.contains("sonnet") || lower.contains("opus") {
+            return "anthropic"
+        }
+        if lower.contains("gpt") || lower.contains("o1") || lower.contains("o3") || lower.contains("o4") {
+            return "openai"
+        }
+        if lower.contains("gemini") || lower.contains("gemma") {
+            return "google"
+        }
+        return model
     }
 }

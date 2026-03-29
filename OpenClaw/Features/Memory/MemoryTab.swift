@@ -28,8 +28,14 @@ struct MemoryTab: View {
                     SkillsListView(vm: vm)
                 }
             }
-            .navigationTitle("Mem & Skills")
-            .navigationBarTitleDisplayMode(.large)
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .principal) {
+                    DetailTitleView(title: "Mem & Skills") {
+                        memSubtitle
+                    }
+                }
+            }
         }
         .task { await vm.loadFiles() }
         .onChange(of: selectedTab) { _, newTab in
@@ -102,6 +108,28 @@ struct MemoryTab: View {
     private var bootstrapFiles: [MemoryFile] { vm.files.filter { $0.kind == .bootstrap } }
     private var dailyLogs: [MemoryFile] { vm.files.filter { $0.kind == .dailyLog } }
     private var referenceFiles: [MemoryFile] { vm.files.filter { $0.kind == .reference } }
+
+    @ViewBuilder
+    private var memSubtitle: some View {
+        let fileCount = vm.files.count
+        let skillCount = vm.skills.count
+        if fileCount > 0 || skillCount > 0 {
+            HStack(spacing: Spacing.xs) {
+                Text("\(fileCount) files")
+                    .font(AppTypography.micro)
+                    .foregroundStyle(AppColors.neutral)
+                if skillCount > 0 {
+                    Text("\u{00B7} \(skillCount) skills")
+                        .font(AppTypography.micro)
+                        .foregroundStyle(AppColors.neutral)
+                }
+            }
+        } else if vm.isLoadingFiles {
+            Text("Loading\u{2026}")
+                .font(AppTypography.micro)
+                .foregroundStyle(AppColors.neutral)
+        }
+    }
 }
 
 struct FileRow: View {

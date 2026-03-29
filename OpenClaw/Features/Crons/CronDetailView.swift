@@ -12,15 +12,27 @@ struct CronDetailView: View {
 
     var body: some View {
         List {
-            // MARK: - Header
-            Section {
-                headerCard
-            }
-            .listRowInsets(EdgeInsets())
-            .listRowBackground(Color.clear)
+            // MARK: - About (merged: schedule + timing + config)
+            Section("About") {
+                // Task description
+                if let task = vm.job.taskDescription {
+                    VStack(alignment: .leading, spacing: Spacing.xxs) {
+                        Text("Purpose")
+                            .font(AppTypography.micro)
+                            .foregroundStyle(AppColors.neutral)
+                        Text(task)
+                            .font(AppTypography.caption)
+                    }
+                }
 
-            // MARK: - Schedule
-            Section("Schedule") {
+                // Configured model
+                if let model = vm.job.configuredModel {
+                    LabeledContent("Model") {
+                        ModelPill(model: model)
+                    }
+                }
+
+                // Schedule
                 LabeledContent("Frequency", value: vm.job.scheduleDescription)
                 LabeledContent("Expression") {
                     Text(vm.job.scheduleExpr)
@@ -30,57 +42,13 @@ struct CronDetailView: View {
                 if let tz = vm.job.timeZone {
                     LabeledContent("Timezone", value: tz)
                 }
-            }
 
-            // MARK: - Timing
-            Section("Timing") {
+                // Timing
                 LabeledContent("Last Run") {
                     HStack(spacing: Spacing.xxs) {
                         CronStatusDot(status: vm.job.status)
                         Text(vm.job.lastRunFormatted)
                             .font(AppTypography.body)
-                    }
-                }
-                if let error = vm.job.lastError {
-                    VStack(alignment: .leading, spacing: Spacing.sm) {
-                        Text(error)
-                            .font(AppTypography.caption)
-                            .foregroundStyle(AppColors.danger)
-
-                        // Investigate button — bold, modern
-                        Button {
-                            showInvestigation = true
-                            Task { await vm.investigateError() }
-                        } label: {
-                            HStack(spacing: Spacing.xs) {
-                                Image(systemName: "sparkle.magnifyingglass")
-                                    .font(AppTypography.body)
-                                Text("Investigate with AI")
-                                    .fontWeight(.semibold)
-                            }
-                            .frame(maxWidth: .infinity)
-                            .padding(.vertical, Spacing.sm)
-                            .foregroundStyle(.white)
-                            .background(AppColors.metricTertiary, in: RoundedRectangle(cornerRadius: AppRadius.lg))
-                        }
-                        .disabled(vm.isInvestigating)
-
-                        // Previous investigation link
-                        if let prev = vm.previousInvestigation {
-                            Button {
-                                showPreviousInvestigation = true
-                            } label: {
-                                HStack(spacing: Spacing.xxs) {
-                                    Image(systemName: "clock.arrow.circlepath")
-                                        .font(AppTypography.micro)
-                                    Text("Last investigated \(prev.investigatedAtFormatted)")
-                                        .font(AppTypography.micro)
-                                        .underline()
-                                }
-                                .foregroundStyle(AppColors.primaryAction)
-                            }
-                            .buttonStyle(.plain)
-                        }
                     }
                 }
                 LabeledContent("Next Run") {
@@ -103,18 +71,44 @@ struct CronDetailView: View {
                 }
             }
 
-            // MARK: - About
-            if vm.job.configuredModel != nil || vm.job.taskDescription != nil {
-                Section("About") {
-                    if let model = vm.job.configuredModel {
-                        LabeledContent("Model") {
-                            ModelPill(model: model)
+            // MARK: - Error + Investigate
+            if let error = vm.job.lastError {
+                Section("Error") {
+                    Text(error)
+                        .font(AppTypography.caption)
+                        .foregroundStyle(AppColors.danger)
+
+                    Button {
+                        showInvestigation = true
+                        Task { await vm.investigateError() }
+                    } label: {
+                        HStack(spacing: Spacing.xs) {
+                            Image(systemName: "sparkle.magnifyingglass")
+                                .font(AppTypography.body)
+                            Text("Investigate with AI")
+                                .fontWeight(.semibold)
                         }
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, Spacing.sm)
+                        .foregroundStyle(.white)
+                        .background(AppColors.metricTertiary, in: RoundedRectangle(cornerRadius: AppRadius.lg))
                     }
-                    if let task = vm.job.taskDescription {
-                        Text(task)
-                            .font(AppTypography.caption)
-                            .foregroundStyle(AppColors.neutral)
+                    .disabled(vm.isInvestigating)
+
+                    if let prev = vm.previousInvestigation {
+                        Button {
+                            showPreviousInvestigation = true
+                        } label: {
+                            HStack(spacing: Spacing.xxs) {
+                                Image(systemName: "clock.arrow.circlepath")
+                                    .font(AppTypography.micro)
+                                Text("Last investigated \(prev.investigatedAtFormatted)")
+                                    .font(AppTypography.micro)
+                                    .underline()
+                            }
+                            .foregroundStyle(AppColors.primaryAction)
+                        }
+                        .buttonStyle(.plain)
                     }
                 }
             }
@@ -190,72 +184,52 @@ struct CronDetailView: View {
             }
         }
         .listStyle(.insetGrouped)
-        .navigationTitle(vm.job.name)
         .navigationBarTitleDisplayMode(.inline)
-        .refreshable {
-            await vm.loadRuns()
-            Haptics.shared.refreshComplete()
-        }
-        .sheet(isPresented: $showInvestigation) {
-            InvestigateSheet(vm: vm)
-        }
-        .sheet(isPresented: $showPreviousInvestigation) {
-            if let prev = vm.previousInvestigation {
-                SavedInvestigationSheet(investigation: prev)
-            }
-        }
-        .task {
-            await vm.loadRuns()
-        }
-    }
-
-    // MARK: - Header Card
-
-    private var headerCard: some View {
-        VStack(spacing: Spacing.md) {
-            HStack {
-                CronStatusBadge(status: vm.job.status)
-                Spacer()
-                if vm.isTogglingEnabled {
-                    ProgressView().scaleEffect(0.8)
-                } else {
-                    Toggle("", isOn: Binding(
-                        get: { vm.job.enabled },
-                        set: { _ in showDisableConfirmation = true }
-                    ))
-                    .labelsHidden()
-                    .tint(AppColors.success)
+        .toolbar {
+            // Custom title with status subtitle
+            ToolbarItem(placement: .principal) {
+                DetailTitleView(title: vm.job.name) {
+                    CronStatusBadge(status: vm.job.status, style: .small)
                 }
             }
 
-            Button {
-                showRunConfirmation = true
-            } label: {
-                HStack(spacing: Spacing.xs) {
-                    if vm.isTriggering {
-                        ProgressView().tint(.white)
-                    } else {
-                        Image(systemName: "play.fill")
+            // Run Now + Enable/Disable
+            ToolbarItem(placement: .primaryAction) {
+                HStack(spacing: Spacing.sm) {
+                    // Enable/Disable
+                    Button {
+                        showDisableConfirmation = true
+                    } label: {
+                        if vm.isTogglingEnabled {
+                            ProgressView().scaleEffect(0.7)
+                        } else {
+                            Image(systemName: vm.job.enabled ? "pause.circle" : "play.circle")
+                                .foregroundStyle(vm.job.enabled ? AppColors.warning : AppColors.success)
+                        }
                     }
-                    Text("Run Now")
-                        .fontWeight(.semibold)
+
+                    // Run Now
+                    Button {
+                        showRunConfirmation = true
+                    } label: {
+                        if vm.isTriggering {
+                            ProgressView().scaleEffect(0.7)
+                        } else {
+                            Image(systemName: "play.fill")
+                                .foregroundStyle(AppColors.primaryAction)
+                        }
+                    }
                 }
-                .frame(maxWidth: .infinity)
-                .padding(.vertical, Spacing.sm)
-            }
-            .background(AppColors.primaryAction, in: RoundedRectangle(cornerRadius: AppRadius.lg))
-            .foregroundStyle(.white)
-            .disabled(vm.isTriggering)
-            .alert("Run Manually?", isPresented: $showRunConfirmation) {
-                Button("Run", role: .destructive) {
-                    Task { await vm.triggerRun() }
-                }
-                Button("Cancel", role: .cancel) {}
-            } message: {
-                Text("This will trigger \"\(vm.job.name)\" immediately outside its normal schedule.")
             }
         }
-        .padding(Spacing.md)
+        .alert("Run Manually?", isPresented: $showRunConfirmation) {
+            Button("Run", role: .destructive) {
+                Task { await vm.triggerRun() }
+            }
+            Button("Cancel", role: .cancel) {}
+        } message: {
+            Text("This will trigger \"\(vm.job.name)\" immediately outside its normal schedule.")
+        }
         .alert(
             vm.job.enabled ? "Disable Job?" : "Enable Job?",
             isPresented: $showDisableConfirmation
@@ -270,8 +244,23 @@ struct CronDetailView: View {
             Button("Cancel", role: .cancel) {}
         } message: {
             Text(vm.job.enabled
-                 ? "\"\(vm.job.name)\" will stop running on its schedule until re-enabled."
-                 : "\"\(vm.job.name)\" will resume running on its schedule.")
+                 ? "This will stop \"\(vm.job.name)\" from running on its schedule until re-enabled."
+                 : "This will resume \"\(vm.job.name)\" on its normal schedule.")
+        }
+        .refreshable {
+            await vm.loadRuns()
+            Haptics.shared.refreshComplete()
+        }
+        .sheet(isPresented: $showInvestigation) {
+            InvestigateSheet(vm: vm)
+        }
+        .sheet(isPresented: $showPreviousInvestigation) {
+            if let prev = vm.previousInvestigation {
+                SavedInvestigationSheet(investigation: prev)
+            }
+        }
+        .task {
+            await vm.loadRuns()
         }
     }
 }

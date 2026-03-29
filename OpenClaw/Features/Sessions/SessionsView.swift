@@ -29,8 +29,14 @@ struct SessionsView: View {
                 subagentsSection
             }
         }
-        .navigationTitle("Sessions")
-        .navigationBarTitleDisplayMode(.large)
+        .navigationBarTitleDisplayMode(.inline)
+        .toolbar {
+            ToolbarItem(placement: .principal) {
+                DetailTitleView(title: "Sessions") {
+                    sessionSubtitle
+                }
+            }
+        }
         }
         .task { await vm.load() }
     }
@@ -102,6 +108,24 @@ struct SessionsView: View {
                 systemImage: "point.3.connected.trianglepath.dotted",
                 description: Text("No subagent sessions found.")
             )
+        }
+    }
+
+    @ViewBuilder
+    private var sessionSubtitle: some View {
+        if let main = vm.mainSession {
+            HStack(spacing: Spacing.xs) {
+                Text(main.status == .running ? "Running" : "Idle")
+                    .font(AppTypography.micro)
+                    .foregroundStyle(main.status == .running ? AppColors.success : AppColors.neutral)
+                Text("\u{00B7} \(Formatters.tokens(main.totalTokens))")
+                    .font(AppTypography.micro)
+                    .foregroundStyle(AppColors.neutral)
+            }
+        } else if vm.isLoading {
+            Text("Loading\u{2026}")
+                .font(AppTypography.micro)
+                .foregroundStyle(AppColors.neutral)
         }
     }
 }
