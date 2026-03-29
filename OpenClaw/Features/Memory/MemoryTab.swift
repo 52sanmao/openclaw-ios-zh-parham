@@ -3,6 +3,7 @@ import SwiftUI
 struct MemoryTab: View {
     @State var vm: MemoryViewModel
     @State private var selectedTab: WorkspaceTab = .memory
+    @State private var showActions = false
 
     enum WorkspaceTab: String, CaseIterable {
         case memory = "Memory"
@@ -35,6 +36,14 @@ struct MemoryTab: View {
                         memSubtitle
                     }
                 }
+                ToolbarItem(placement: .primaryAction) {
+                    Button { showActions = true } label: {
+                        Image(systemName: "wand.and.stars")
+                    }
+                }
+            }
+            .sheet(isPresented: $showActions) {
+                MemoryActionSheet(tab: selectedTab, vm: vm)
             }
         }
         .task { await vm.loadFiles() }

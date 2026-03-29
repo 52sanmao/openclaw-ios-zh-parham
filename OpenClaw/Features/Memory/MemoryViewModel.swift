@@ -27,7 +27,7 @@ final class MemoryViewModel {
     var submitError: Error?
 
     private let repository: MemoryRepository
-    private let client: GatewayClientProtocol
+    let client: GatewayClientProtocol
 
     init(repository: MemoryRepository, client: GatewayClientProtocol) {
         self.repository = repository
