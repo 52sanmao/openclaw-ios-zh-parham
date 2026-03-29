@@ -28,13 +28,8 @@ struct CommandResultSheet: View {
 
                     Divider()
 
-                    // Command output
-                    Text(result.output)
-                        .font(AppTypography.captionMono)
-                        .textSelection(.enabled)
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                        .padding(Spacing.sm)
-                        .background(AppColors.neutral.opacity(0.08), in: RoundedRectangle(cornerRadius: AppRadius.sm))
+                    // Command output (parsed or raw)
+                    CommandOutputView(commandId: result.command.id, output: result.output)
 
                     // Action buttons
                     HStack(spacing: Spacing.sm) {
