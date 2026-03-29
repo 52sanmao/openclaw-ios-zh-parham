@@ -56,6 +56,7 @@ Full step-by-step trace of agent execution with metadata pills (model, provider,
 - **Tool calls** — tool name + arguments
 - **Tool results** — stdout/stderr output
 - **Text responses** — final agent output (markdown)
+- **Step comments** — expand any step, tap "Add Comment" to annotate. Comments show inline as orange cards with delete. Queue multiple comments, then batch-submit to the AI agent. The agent reads the session trace, checks if issues are stale or active, and reports per-comment findings. Prompt includes session context (main session, cron job run, or subagent).
 
 ### Commands & Admin Detail
 

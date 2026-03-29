@@ -101,6 +101,8 @@ Sub-grid visual details (2pt padding, 6pt dots, 8pt indicator circles) are accep
 - **Investigate with AI**: Available on both cron errors (`CronDetailView`) and command results (`CommandResultSheet`). Sends structured prompt to agent, shows markdown response with model/token info.
 - **`@Bindable` for passed-in VMs**: When a view receives an `@Observable` VM from outside and needs bindings (`$vm.property`), use `@Bindable var vm` — not `@State`.
 - **Exit code checking**: All `stats/exec` calls go through `RemoteMemoryRepository.exec()` helper which throws `MemoryError.commandFailed` on non-zero exit codes.
+- **Agent constants**: `AppConstants.agentId` (`"orchestrator"`) is the single source for the agent name. `AppConstants.workspaceRoot` and all `SessionKeys` derive from it. Never hardcode `"orchestrator"` — use these constants. Will be dynamic for multi-agent.
+- **Trace comments**: Users can annotate trace steps with comments (same UX as memory paragraphs). Comments queue with inline display + swipe-to-delete. `PromptTemplates.investigateTrace()` includes session type context (main/cron/subagent) derived from the session key via `describeSessionType()`.
 - **Streaming chat**: `GatewayClient.streamChat()` returns `AsyncThrowingStream<String, Error>`. Uses SSE via `URLSession.bytes(for:)`, parses `data:` lines, decodes `ChatStreamChunk` deltas, yields text tokens. Stops on `[DONE]`. Uses `longRunningSession` (15min timeout). Send only the user message — session key manages history server-side. Empty system prompt is skipped.
 - **Chat history**: Load via `sessions_history` with `includeTools: false` and `limit: 50` on appear. Only user + assistant text messages (no tool calls). Loaded once per chat view lifecycle. Reload button in toolbar re-fetches latest.
 - **Chat safety**: Use message UUID for index lookups during streaming (never captured `Int` index — array may change). `hasPendingSend` flag prevents history reload from overwriting in-flight messages.
@@ -130,6 +132,7 @@ All prompts sent to the agent follow these principles:
 - **Skill file commands**: `skills-list` (list folders), `skill-files` (list files in a skill, takes skill name as args), `skill-read` (read a file, takes "skillId relativePath" as args). All via `POST /stats/exec`.
 - **Cron list**: Pass `includeDisabled: true` to get all jobs including disabled ones.
 - **Cron schedules**: `kind: "cron"` has `expr`, `kind: "every"` has `everyMs` (no `expr`). DTO `expr` must be optional.
+- **Session keys**: All session key strings come from `SessionKeys` constants (`.main`, `.cronPrefix`, `.subagentPrefix`), derived from `AppConstants.agentId`. Never hardcode session key prefixes.
 - **Session list**: Tool is `sessions_list`. Response is wrapped: `{"count": N, "sessions": [...]}` — decode via `SessionListResponseDTO`, not a raw array. Returns all session types (main, cron persistent, subagents). Filter client-side by key prefix.
 - **Session history**: Tool is `sessions_history` (not `sessions`). Takes `sessionKey` (full format), not `sessionId` (bare UUID).
 - **Session types**: `agent:orchestrator:main` (one, the live chat), `agent:orchestrator:cron:<jobId>` (persistent cron sessions — skip, covered by Crons tab), `agent:orchestrator:subagent:<uuid>` (spawned subagents). Cron run sessions (`...:run:<uuid>`) do NOT appear in `sessions_list`.
