@@ -1,131 +1,196 @@
-# OpenClaw
+<p align="center">
+  <img src="OpenClaw/Assets.xcassets/openclaw.imageset/openclaw-color.png" width="120" alt="OpenClaw iOS">
+</p>
 
-A native iOS control room for the OpenClaw AI gateway. Monitor system health, run commands, manage cron jobs, inspect agent execution traces, track token usage, browse agent memory and skills, chat with your agent — all from your phone.
+<h1 align="center">OpenClaw for iOS</h1>
 
-Built with SwiftUI, Swift Concurrency, and Charts. 128 files, ~10,000 lines. One external dependency: [MarkdownUI](https://github.com/gonzalezreal/swift-markdown-ui) for rendering LLM markdown output.
+<p align="center">
+  A native control room for the <a href="https://github.com/nichochar/openclaw">OpenClaw</a> AI gateway.<br>
+  Monitor, trace, chat, and manage your agent — from your phone.
+</p>
 
-## Screens
+<p align="center">
+  <img src="https://img.shields.io/badge/Swift-6-orange?logo=swift" alt="Swift 6">
+  <img src="https://img.shields.io/badge/iOS-17%2B-blue?logo=apple" alt="iOS 17+">
+  <img src="https://img.shields.io/badge/SwiftUI-Charts-purple?logo=swift" alt="SwiftUI">
+  <img src="https://img.shields.io/badge/License-MIT-green" alt="License">
+  <img src="https://img.shields.io/badge/Dependencies-1-brightgreen" alt="Dependencies">
+  <img src="https://img.shields.io/badge/Code-100%25%20AI%20Generated-blueviolet" alt="AI Generated">
+</p>
 
-| Tab | Description |
-|-----|-------------|
-| **Home** | Dashboard with 6 cards: System Health, Commands, Cron Jobs, Token Usage, Outreach Stats, Blog Pipeline. OpenClaw icon (left) → streaming chat. Wrench icon → Tools & MCP. Gear icon → Settings. Status subtitle: "All systems OK" / "N cron failures". |
-| **Crons** | Segmented: **Cron Jobs** / **History**. Subtitle: "12 jobs · 2 failed". Calendar icon → 24-hour schedule timeline. Tap job → detail (about, stats, run history). Tap run → execution trace with step comments. |
-| **Mem & Skills** | Segmented: **Memory** / **Skills**. Subtitle: "8 files · 10 skills". Wand icon → maintenance actions (Full Cleanup, Today Cleanup). Comment system: paragraph, page, and skill levels. |
-| **Sessions** | Segmented: **Chat History** / **Subagents**. Subtitle: "Running · 149k". Main session hero card with context ring gauge. Step-level trace comments. |
-| **More** | Placeholder for future features |
+---
 
-### Home Dashboard Cards
+## The Story
 
-- **System Health** — CPU, RAM, Disk ring gauges with auto-polling every 15s. Uptime + load average. Manual refresh button.
-- **Commands** — 6 quick action buttons. Each confirms before running, shows result with copy + "Investigate with AI". Tap "View Details" → full grid of all 12 commands + admin panels (Models & Config, Channels & Provider Usage). Wrench icon → Tools & MCP.
-- **Cron Summary** — Last run status + next upcoming run.
-- **Token Usage** — Period picker (Today/Yesterday/7 Days). Total tokens, cost, breakdown bar, model breakdown. Tap "View Details" → deep-dive analytics with charts and pipeline attribution.
-- **Outreach Stats** — 6-cell grid with leads, channels, conversions.
-- **Blog Pipeline** — Published count, active pipeline stage pills.
+Hi, I'm **Parham** — Manchester-based software developer with 12+ years of experience. Technical Lead at [Kitman Labs](https://www.kitmanlabs.com) by day, OpenClaw and AI enthusiast by night.
 
-### Cron Detail View
+I've been deep in AI for the last three years, and [OpenClaw](https://github.com/nichochar/openclaw) genuinely impressed me — it was the missing piece for automating my workflows and being dramatically more productive. Here's one of my earlier cron schedules in Google Calendar (it's much crazier now):
 
-- **About** — purpose (from job payload), configured model with provider icon, frequency, cron expression, timezone, last/next run, consecutive errors
-- **Error** — error message + "Investigate with AI" button + previous investigation link
-- **Run Stats** — avg duration, avg tokens, total tokens, success rate bar (computed from loaded runs)
-- **Run History** — paginated with total count. Each entry: status, time, duration, model, tokens, breakdown bar. Tap row → trace with step comments.
-- **Toolbar** — title with status badge subtitle, pause/play toggle, run button
+<p align="center">
+  <img src="resources/openclaw-calendar.PNG" width="700" alt="OpenClaw Cron Schedule in Google Calendar">
+</p>
 
-### Schedule Timeline
+But as a technical person myself, I found the onboarding, setup, and control UI wasn't OpenClaw's best feature. The engine, the brain, how it works — that's extraordinary. The UX? Not so much.
 
-24-hour timeline showing when all cron jobs run today. Job legend with color dots. Current hour highlighted. Client-side cron expression parsing.
+**Swift and iOS are my specialty**, so I built this. The main reasons:
 
-### Token Detail Page
+- **Tracing** — cron runs get crazy in logs. Being able to drill down to any trace step and ask the agent to investigate a warning or error should be much easier than the web control UI
+- **Comments on everything** — see a memory file that needs updating? Comment on a paragraph. See a trace step that looks wrong? Comment on it. The agent reads your comments and acts. This is the missing piece
+- **Mobile-first control** — pull down to refresh, tap to investigate, chat with your agent while on the go
 
-Summary grid, donut chart (token split), cache hit rate gauge, cost-by-model bar chart, expanded per-model cards with breakdown bars, per-pipeline token attribution.
+---
 
-### Agent Execution Trace
+## Demo
 
-Step-by-step trace with metadata pills (model with provider icon, stop reason, tokens). Step types: System Prompt, Input Prompt, Thinking, Tool calls, Tool results, Text responses. Step comments: expand → "Add Comment" → inline orange cards with delete → batch submit. Agent investigates with session type context (main/cron/subagent).
+<p align="center">
+  <a href="resources/ScreenRecording_03-30-2026 14-22-00_1.MP4">
+    <img src="resources/IMG_2548.PNG" width="250" alt="Watch Demo">
+  </a>
+</p>
 
-### Commands & Admin Detail
+<p align="center"><em>3-minute walkthrough of the app in action</em></p>
 
-Full 12-command grid. Models & Config (default model with provider icon, fallbacks, agent info, aliases). Channels (status dots, provider usage bars). Tools & MCP (nav bar icon).
+---
 
-### Tools & MCP
+## Screenshots
 
-Accessible from Home and Commands detail via wrench icon. Native tools grouped by category (runtime, fs, web, ui, messaging, automation, nodes, media, sessions, memory) with profile badge and allow/deny overrides. MCP servers with runtime info — tap or nav bar server.rack icon → dedicated MCP detail page with full tool descriptions. `mcp-tools` lazy-loaded on expand (slow call).
+<p align="center">
+  <img src="resources/IMG_2548.PNG" width="220" alt="Home Dashboard">
+  <img src="resources/IMG_2544.PNG" width="220" alt="Cron History">
+  <img src="resources/IMG_2546.PNG" width="220" alt="Memory & Skills">
+</p>
 
-### Mem & Skills Tab
+<p align="center">
+  <img src="resources/IMG_2547.PNG" width="220" alt="Execution Trace">
+  <img src="resources/IMG_2550.PNG" width="220" alt="Sessions">
+  <img src="resources/IMG_2545.PNG" width="220" alt="Schedule Timeline">
+</p>
 
-- **Memory** — file browser (Memory Files, Daily Logs, Reference). Paragraph-level comments + page-level comments.
-- **Skills** — skill folder browser → file tree (documents + scripts/config). Skill-level comments (agent reads `create-skill` first). `skill-read` for all file types.
-- **Maintenance actions** — wand icon: Full Cleanup (read docs → update today → clean all), Today Cleanup (read docs → update today only). Agent reads `/app/docs` memory best practices first.
-- **Comment system** — 3 levels (paragraph, page, skill). Shared `CommentInputBar` + `CommentSheet`. Paragraph comments queue with swipe-to-delete. Page/skill comments submit immediately.
+<p align="center">
+  <img src="resources/IMG_2549.PNG" width="220" alt="Doctor Output">
+</p>
 
-### Sessions Tab
+---
 
-- **Chat History** — main session hero card: context ring gauge, model, tokens, cost, subagents, status. Tap → trace (newest first).
-- **Subagents** — sorted by most recent. Model, tokens, last updated. Tap → trace (chronological).
+## Features
 
-### Chat
+### Dashboard
+Core cards: System Health (ring gauges, 15s polling), Commands (12 quick actions with parsed output + AI investigation), Cron Summary, Token Usage (charts, pipeline attribution). Optional cards (Outreach Stats, Blog Pipeline) appear automatically if the gateway provides those endpoints — hidden gracefully otherwise.
 
-Accessible from Home nav bar OpenClaw icon. SSE streaming chat with the agent. Session-bound (server manages history). Loads last 50 messages on open. Chat bubbles with markdown rendering. Assistant messages show timestamp + copy button. Auto-scroll during streaming. Stop button. Interactive keyboard dismiss. Reload button.
+### Cron Management
+Full job list with status badges. Segmented Cron Jobs / History. 24-hour schedule timeline. Detail view with: purpose, model, schedule, stats (avg duration, tokens, success rate), paginated run history. One-tap "Investigate with AI" on errors.
 
-### Settings
+### Execution Traces
+Step-by-step agent traces: system prompts, thinking, tool calls, tool results, responses. Metadata pills (model with provider icon, tokens). **Comment on any step** — queue comments, batch submit, agent investigates with full session context.
 
-Authentication (token status, replace/set). Gateway info (URL, agent, TLS). Connection test (live system stats request). About section.
+### Memory & Skills
+Browse all workspace files. Paragraph-level markdown viewer with **Figma-style comments** — annotate paragraphs, submit to agent for edits. Skills: browse folder trees, read SKILL.md with comments, view scripts/config read-only. Skill-level comments instruct agent to read `create-skill` best practices first. Maintenance actions: Full Cleanup, Today Cleanup.
+
+### Streaming Chat
+SSE streaming chat with the orchestrator agent. Session-bound (server manages history). Chat bubbles with markdown, timestamps, copy. Auto-scroll, stop button, interactive keyboard dismiss.
+
+### Sessions
+Main session hero card with context window ring gauge. Subagent list. Both link to execution traces.
+
+### Command Output Parsers
+Custom parsed views for: **Tail Logs** (level-filtered structured entries), **Security Audit** (severity badges, collapsible findings with fixes), **Doctor** (collapsible sections, status lines), **Status** (table sections), **Channel Status** (probe cards). Raw monospace fallback for others.
+
+### Admin
+Models & Config (provider icons, fallbacks, aliases). Channels (status dots, provider usage bars). Tools & MCP (native tool groups, MCP server detail with lazy-loaded tool lists). All 15 exec commands.
+
+---
 
 ## Getting Started
 
-1. Open `OpenClaw.xcodeproj` in Xcode
-2. Build and run on a simulator or device (iOS 17+)
-3. On first launch, paste your gateway Bearer token
-4. The Home dashboard loads automatically — pull down to refresh
+1. **Clone** this repo
+2. **Open** `OpenClaw.xcodeproj` in Xcode 16+
+3. **Build and run** on a simulator or device (iOS 17+)
+4. **On first launch**, enter your gateway URL and Bearer token
+5. The dashboard loads automatically — pull down to refresh
+
+### Prerequisites
+
+- An [OpenClaw](https://github.com/nichochar/openclaw) gateway running and accessible
+- A Bearer token for authentication
+- Gateway config:
+  ```
+  tools.sessions.visibility = "all"
+  tools.profile = "full"
+  gateway.http.endpoints.chatCompletions.enabled = true
+  ```
+
+---
+
+## Architecture
+
+Clean Architecture with MVVM per feature. 135 files, ~11,000 lines.
+
+```
+View → LoadableViewModel<T> → Repository protocol → GatewayClientProtocol → URLSession
+                                      ↓
+                                 MemoryCache (actor, TTL)
+```
+
+- **Swift 6** concurrency: `@Observable`, `@MainActor`, strict `Sendable`
+- **Design system**: `Spacing`, `AppColors`, `AppTypography`, `AppRadius`, `Formatters`
+- **Shared components**: `ModelPill`, `ProviderIcon`, `DetailTitleView`, `CommentSheet`, `CommentInputBar`, `CopyButton`, `ElapsedTimer`, `TokenBreakdownBar`
+- **One external dependency**: [MarkdownUI](https://github.com/gonzalezreal/swift-markdown-ui)
+
+See [CLAUDE.md](CLAUDE.md) for the full architecture guide, conventions, and API gotchas.
+
+---
 
 ## API
 
-All requests go to `https://api.appwebdev.co.uk` with `Authorization: Bearer <token>`.
+All requests go to your configured gateway URL with `Authorization: Bearer <token>`.
 
 | Method | Path | Purpose |
 |--------|------|---------|
-| GET | `/stats/system` | CPU, RAM, disk, uptime, load |
-| GET | `/stats/outreach` | Leads, emails, WhatsApp, conversions |
-| GET | `/stats/blog` | Published count, pipeline stages |
-| GET | `/stats/tokens?period=` | Token usage with full model breakdown |
-| POST | `/stats/exec` | Run predefined safe commands (allowlisted) |
-| POST | `/tools/invoke` | Gateway tool calls (see below) |
+| GET | `/stats/system` | CPU, RAM, disk, uptime |
+| GET | `/stats/tokens?period=` | Token usage with model breakdown |
+| POST | `/stats/exec` | Run allowlisted commands |
+| POST | `/tools/invoke` | Gateway tool calls (cron, sessions, memory) |
 | POST | `/v1/chat/completions` | Chat streaming (SSE) + agent prompts |
 
-### Tool Actions (via /tools/invoke)
+<details>
+<summary>Full command list</summary>
 
-| Tool | Action | Args | Purpose |
-|------|--------|------|---------|
-| `cron` | `list` | `includeDisabled: true` | List all cron jobs |
-| `cron` | `runs` | `jobId`, `limit`, `offset` | Paginated run history |
-| `cron` | `run` | `jobId` | Manual trigger |
-| `cron` | `update` | `jobId`, `patch: {enabled}` | Toggle enabled/disabled |
-| `gateway` | `restart` | — | Restart gateway process |
-| `sessions_list` | — | `limit` | List all sessions (`{count, sessions}`) |
-| `sessions_history` | — | `sessionKey`, `limit`, `includeTools` | Agent execution trace |
-| `memory_get` | — | `path`, `sessionKey` | Read workspace file content |
+**Action commands**: `doctor`, `status`, `logs`, `security-audit`, `backup`, `channels-status`, `config-validate`, `memory-reindex`, `session-cleanup`, `plugin-update`
 
-### Stats Exec Commands (via /stats/exec)
+**Workspace commands**: `memory-list`, `skills-list`, `skill-files`, `skill-read`
 
-Action commands: `doctor`, `status`, `logs`, `security-audit`, `backup`, `channels-status`, `config-validate`, `memory-reindex`, `session-cleanup`, `plugin-update`.
+**Admin commands**: `models-status`, `agents-list`, `channels-list`, `tools-list`, `mcp-list`, `mcp-tools`
+</details>
 
-Workspace commands: `memory-list`, `skills-list`, `skill-files` (args: skill name), `skill-read` (args: "skillId relativePath").
+---
 
-Admin commands: `models-status`, `agents-list`, `channels-list`, `tools-list`, `mcp-list`, `mcp-tools`.
+## AI-Generated
 
-### Gateway Config Required
+100% of the code in this repository was generated by AI (Claude Code). Every file, every view, every parser — written through conversation, not by hand. The architecture, patterns, and conventions were designed collaboratively but the implementation is entirely AI-authored.
 
-- `tools.sessions.visibility = "all"` — allows reading cron run session traces
-- `tools.profile = "full"` — enables sessions_history, sessions_list, memory_get
-- `memorySearch.extraPaths` — must include workspace root for accessing all `.md` files
-- `gateway.http.endpoints.chatCompletions.enabled = true` — for chat, investigations, and agent-mediated edits
+## Roadmap
 
-## Requirements
+If this project gets enough traction, the long-term plan is to migrate to **Kotlin Multiplatform (KMP)** for shared data and business logic layers, with native UI on each platform:
 
-- iOS 17+
-- Xcode 16+
-- MarkdownUI via SPM
+- **iOS** — SwiftUI (current)
+- **Android** — Jetpack Compose
+- **macOS** — SwiftUI (shared with iOS)
+- **Shared** — Kotlin Multiplatform for networking, repositories, DTOs, and business logic
+
+### Future: Semantic Memory Search
+
+The `memory_search` tool is available via `/tools/invoke` but requires an embedding provider (OpenAI, Google, Voyage, or Mistral API key) to be configured on the server. Once enabled, semantic search can be added to the Memory tab.
+
+## Contributing
+
+Contributions are welcome. Please open an issue first to discuss what you'd like to change.
 
 ## License
 
-Private — all rights reserved.
+MIT
+
+---
+
+<p align="center">
+  Built with <a href="https://claude.ai/code">Claude Code</a> by <a href="https://github.com/parham-dev">Parham</a>
+</p>

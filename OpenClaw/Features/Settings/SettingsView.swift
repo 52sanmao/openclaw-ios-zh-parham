@@ -42,9 +42,8 @@ struct SettingsView: View {
 
             // Gateway info
             Section("Gateway") {
-                LabeledContent("URL", value: "api.appwebdev.co.uk")
+                LabeledContent("URL", value: GatewayConfig.displayURL)
                 LabeledContent("Agent", value: AppConstants.agentId.capitalized)
-                LabeledContent("TLS", value: "Auto-renewal")
             }
 
             // Connection test

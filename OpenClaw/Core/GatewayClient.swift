@@ -12,122 +12,90 @@ protocol GatewayClientProtocol: Sendable {
     func streamChat(message: String, sessionKey: String) -> AsyncThrowingStream<String, Error>
 }
 
+// MARK: - Gateway URL Storage
+
+enum GatewayConfig {
+    private static let urlKey = "gateway_base_url"
+
+    static var baseURL: URL? {
+        guard let str = UserDefaults.standard.string(forKey: urlKey),
+              let url = URL(string: str) else { return nil }
+        return url
+    }
+
+    static func saveBaseURL(_ urlString: String) {
+        var cleaned = urlString.trimmingCharacters(in: .whitespaces)
+        if cleaned.hasSuffix("/") { cleaned = String(cleaned.dropLast()) }
+        if !cleaned.hasPrefix("http") { cleaned = "https://\(cleaned)" }
+        UserDefaults.standard.set(cleaned, forKey: urlKey)
+    }
+
+    static var isConfigured: Bool { baseURL != nil }
+
+    static var displayURL: String {
+        baseURL?.host() ?? "Not configured"
+    }
+}
+
 // MARK: - Implementation
 
 /// Thread-safe gateway HTTP client.
 /// All stored properties are immutable and Sendable — no @unchecked needed.
 struct GatewayClient: GatewayClientProtocol, Sendable {
-    private static let baseURL = URL(string: "https://api.appwebdev.co.uk")!
-    private static let invokeURL = baseURL.appending(path: "tools/invoke")
     private static let logger = Logger(subsystem: "co.uk.appwebdev.openclaw", category: "Gateway")
+
+    /// Dedicated session with 15-minute timeout for long-running agent calls.
+    private static let longRunningSession: URLSession = {
+        let config = URLSessionConfiguration.default
+        config.timeoutIntervalForRequest = 900
+        return URLSession(configuration: config)
+    }()
 
     let keychain: KeychainService
 
-    init(keychain: KeychainService = KeychainService()) {
-        self.keychain = keychain
-    }
-
-    // MARK: - GET /stats/*  (plain JSON, no envelope)
+    // MARK: - GET /stats/*
 
     func stats<Response: Decodable>(_ path: String) async throws -> Response {
-        let token = try requireToken()
-
-        guard let url = URL(string: "\(Self.baseURL.absoluteString)/\(path)") else {
-            throw GatewayError.invalidResponse
-        }
-        var request = URLRequest(url: url)
-        request.httpMethod = "GET"
-        request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
-
-        Self.logger.debug("GET /\(path)")
-
-        let (data, response) = try await URLSession.shared.data(for: request)
-        try validateHTTPResponse(response, data: data, path: path)
-
-        let decoder = JSONDecoder()
-        decoder.keyDecodingStrategy = .convertFromSnakeCase
-        return try decoder.decode(Response.self, from: data)
+        let (data, _) = try await request("GET", path: path)
+        return try JSONDecoder.snakeCase.decode(Response.self, from: data)
     }
 
-    // MARK: - POST /stats/*  (plain JSON, snake_case, e.g. /stats/exec)
+    // MARK: - POST /stats/*
 
     func statsPost<Body: Encodable, Response: Decodable>(_ path: String, body: Body) async throws -> Response {
-        let token = try requireToken()
-
-        guard let url = URL(string: "\(Self.baseURL.absoluteString)/\(path)") else {
-            throw GatewayError.invalidResponse
-        }
-        var request = URLRequest(url: url)
-        request.httpMethod = "POST"
-        request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
-        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
-        request.httpBody = try JSONEncoder().encode(body)
-
-        Self.logger.debug("POST /\(path)")
-
-        let (data, response) = try await URLSession.shared.data(for: request)
-        try validateHTTPResponse(response, data: data, path: path)
-
-        let decoder = JSONDecoder()
-        decoder.keyDecodingStrategy = .convertFromSnakeCase
-        return try decoder.decode(Response.self, from: data)
+        let bodyData = try JSONEncoder().encode(body)
+        let (data, _) = try await request("POST", path: path, body: bodyData)
+        return try JSONDecoder.snakeCase.decode(Response.self, from: data)
     }
 
-    // MARK: - POST /tools/invoke  (wrapped: result.content[0].text → JSON string)
+    // MARK: - POST /tools/invoke
 
-    func invoke<Body: Encodable, Response: Decodable>(
-        _ body: Body
-    ) async throws -> Response {
-        let token = try requireToken()
-
-        var request = URLRequest(url: Self.invokeURL)
-        request.httpMethod = "POST"
-        request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
-        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
-        request.httpBody = try JSONEncoder().encode(body)
-
-        Self.logger.debug("POST /tools/invoke")
-
-        let (data, response) = try await URLSession.shared.data(for: request)
-        try validateHTTPResponse(response, data: data, path: "tools/invoke")
-
+    func invoke<Body: Encodable, Response: Decodable>(_ body: Body) async throws -> Response {
+        let bodyData = try JSONEncoder().encode(body)
+        let (data, _) = try await request("POST", path: "tools/invoke", body: bodyData)
         let envelope = try JSONDecoder().decode(GatewayResponse.self, from: data)
         guard let text = envelope.result.content.first?.text,
               let jsonData = text.data(using: .utf8) else {
             throw GatewayError.emptyContent
         }
-
         return try JSONDecoder().decode(Response.self, from: jsonData)
     }
 
-    // MARK: - POST /v1/chat/completions (with session key header)
+    // MARK: - POST /v1/chat/completions
 
-    /// Long-running session for chat completions — no timeout (agent may take 15+ minutes).
-    private static let longRunningSession: URLSession = {
-        let config = URLSessionConfiguration.default
-        config.timeoutIntervalForRequest = 900  // 15 min
-        config.timeoutIntervalForResource = 900
-        return URLSession(configuration: config)
-    }()
-
-    func chatCompletion(_ body: ChatCompletionRequest, sessionKey: String) async throws -> ChatCompletionResponse {
+    func chatCompletion(_ request: ChatCompletionRequest, sessionKey: String) async throws -> ChatCompletionResponse {
         let token = try requireToken()
-
-        guard let url = URL(string: "\(Self.baseURL.absoluteString)/v1/chat/completions") else {
-            throw GatewayError.invalidResponse
-        }
-        var request = URLRequest(url: url)
-        request.httpMethod = "POST"
-        request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
-        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
-        request.setValue(sessionKey, forHTTPHeaderField: "x-openclaw-session-key")
-        request.httpBody = try JSONEncoder().encode(body)
+        let url = try buildURL("v1/chat/completions")
+        var req = URLRequest(url: url)
+        req.httpMethod = "POST"
+        req.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+        req.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        req.setValue(sessionKey, forHTTPHeaderField: "x-openclaw-session-key")
+        req.httpBody = try JSONEncoder().encode(request)
 
         Self.logger.debug("POST /v1/chat/completions (session: \(sessionKey))")
-
-        let (data, response) = try await Self.longRunningSession.data(for: request)
+        let (data, response) = try await Self.longRunningSession.data(for: req)
         try validateHTTPResponse(response, data: data, path: "v1/chat/completions")
-
         return try JSONDecoder().decode(ChatCompletionResponse.self, from: data)
     }
 
@@ -138,28 +106,20 @@ struct GatewayClient: GatewayClientProtocol, Sendable {
             Task {
                 do {
                     let token = try requireToken()
-                    guard let url = URL(string: "\(Self.baseURL.absoluteString)/v1/chat/completions") else {
-                        continuation.finish(throwing: GatewayError.invalidResponse)
-                        return
-                    }
+                    let url = try buildURL("v1/chat/completions")
+                    var req = URLRequest(url: url)
+                    req.httpMethod = "POST"
+                    req.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+                    req.setValue("application/json", forHTTPHeaderField: "Content-Type")
+                    req.setValue(sessionKey, forHTTPHeaderField: "x-openclaw-session-key")
 
-                    var request = URLRequest(url: url)
-                    request.httpMethod = "POST"
-                    request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
-                    request.setValue("application/json", forHTTPHeaderField: "Content-Type")
-                    request.setValue(sessionKey, forHTTPHeaderField: "x-openclaw-session-key")
-
-                    let body = ChatCompletionRequest(
-                        system: "", user: message, model: "openclaw", stream: true
-                    )
-                    request.httpBody = try JSONEncoder().encode(body)
+                    let body = ChatCompletionRequest(system: "", user: message, model: "openclaw", stream: true)
+                    req.httpBody = try JSONEncoder().encode(body)
 
                     Self.logger.debug("SSE /v1/chat/completions (session: \(sessionKey))")
+                    let (bytes, response) = try await Self.longRunningSession.bytes(for: req)
 
-                    let (bytes, response) = try await Self.longRunningSession.bytes(for: request)
-
-                    guard let http = response as? HTTPURLResponse,
-                          (200...299).contains(http.statusCode) else {
+                    guard let http = response as? HTTPURLResponse, (200...299).contains(http.statusCode) else {
                         let http = response as? HTTPURLResponse
                         continuation.finish(throwing: GatewayError.httpError(http?.statusCode ?? 0, body: "Stream failed"))
                         return
@@ -172,9 +132,7 @@ struct GatewayClient: GatewayClientProtocol, Sendable {
 
                         guard let data = payload.data(using: .utf8),
                               let chunk = try? JSONDecoder().decode(ChatStreamChunk.self, from: data),
-                              let delta = chunk.choices.first?.delta.content else {
-                            continue
-                        }
+                              let delta = chunk.choices.first?.delta.content else { continue }
                         continuation.yield(delta)
                     }
                     continuation.finish()
@@ -187,27 +145,49 @@ struct GatewayClient: GatewayClientProtocol, Sendable {
 
     // MARK: - Private helpers
 
-    private func requireToken() throws -> String {
-        guard let token = keychain.readToken() else {
-            throw GatewayError.noToken
+    private func request(_ method: String, path: String, body: Data? = nil) async throws -> (Data, URLResponse) {
+        let token = try requireToken()
+        let url = try buildURL(path)
+        var req = URLRequest(url: url)
+        req.httpMethod = method
+        req.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+        if let body {
+            req.setValue("application/json", forHTTPHeaderField: "Content-Type")
+            req.httpBody = body
         }
+        Self.logger.debug("\(method) /\(path)")
+        let (data, response) = try await URLSession.shared.data(for: req)
+        try validateHTTPResponse(response, data: data, path: path)
+        return (data, response)
+    }
+
+    private func requireToken() throws -> String {
+        guard let token = keychain.readToken() else { throw GatewayError.noToken }
         return token
     }
 
-    private func validateHTTPResponse(_ response: URLResponse, data: Data, path: String) throws {
-        guard let http = response as? HTTPURLResponse else {
-            throw GatewayError.invalidResponse
-        }
+    private func buildURL(_ path: String) throws -> URL {
+        guard let base = GatewayConfig.baseURL else { throw GatewayError.noBaseURL }
+        guard let url = URL(string: "\(base.absoluteString)/\(path)") else { throw GatewayError.invalidResponse }
+        return url
+    }
 
+    private func validateHTTPResponse(_ response: URLResponse, data: Data, path: String) throws {
+        guard let http = response as? HTTPURLResponse else { throw GatewayError.invalidResponse }
         guard (200...299).contains(http.statusCode) else {
             let body = String(data: data, encoding: .utf8) ?? ""
-            if let envelope = try? JSONDecoder().decode(GatewayErrorEnvelope.self, from: data),
-               let detail = envelope.error {
-                Self.logger.error("\(http.statusCode) /\(path) — \(detail.message)")
-                throw GatewayError.serverError(http.statusCode, type: detail.type, message: detail.message)
+            if let envelope = try? JSONDecoder().decode(GatewayErrorEnvelope.self, from: data), let err = envelope.error {
+                throw GatewayError.serverError(http.statusCode, type: err.type, message: err.message)
             }
-            Self.logger.error("\(http.statusCode) /\(path)")
             throw GatewayError.httpError(http.statusCode, body: body)
         }
     }
+}
+
+private extension JSONDecoder {
+    static let snakeCase: JSONDecoder = {
+        let d = JSONDecoder()
+        d.keyDecodingStrategy = .convertFromSnakeCase
+        return d
+    }()
 }

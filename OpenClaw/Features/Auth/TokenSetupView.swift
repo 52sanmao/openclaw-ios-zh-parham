@@ -4,39 +4,63 @@ struct TokenSetupView: View {
     let keychain: KeychainService
     let onTokenSaved: () -> Void
 
+    @State private var urlInput = GatewayConfig.baseURL?.absoluteString ?? ""
     @State private var tokenInput = ""
     @State private var errorMessage: String?
     @State private var isSaving = false
 
+    private var canConnect: Bool {
+        !urlInput.trimmingCharacters(in: .whitespaces).isEmpty
+        && !tokenInput.trimmingCharacters(in: .whitespaces).isEmpty
+    }
+
     var body: some View {
-        VStack(spacing: Spacing.lg + 4) {
+        VStack(spacing: Spacing.lg) {
             Spacer()
 
-            Image(systemName: "key.fill")
-                .font(AppTypography.heroIcon)
-                .foregroundStyle(AppColors.warning)
+            Image("openclaw")
+                .resizable()
+                .aspectRatio(contentMode: .fit)
+                .frame(width: 64, height: 64)
 
             VStack(spacing: Spacing.xs) {
                 Text("Connect to Gateway")
                     .font(AppTypography.screenTitle)
-                Text("Enter your Bearer token to connect to the OpenClaw gateway at api.appwebdev.co.uk.")
+                Text("Enter your gateway URL and Bearer token to connect.")
                     .font(AppTypography.body)
                     .foregroundStyle(AppColors.neutral)
                     .multilineTextAlignment(.center)
             }
 
-            VStack(alignment: .leading, spacing: Spacing.xs - 2) {
-                Text("BEARER TOKEN")
-                    .font(AppTypography.micro)
-                    .foregroundStyle(AppColors.neutral)
-                    .tracking(AppTypography.sectionLabelTracking)
+            VStack(alignment: .leading, spacing: Spacing.md) {
+                // Gateway URL
+                VStack(alignment: .leading, spacing: Spacing.xxs) {
+                    Text("GATEWAY URL")
+                        .font(AppTypography.micro)
+                        .foregroundStyle(AppColors.neutral)
 
-                SecureField("Paste token here\u{2026}", text: $tokenInput)
-                    .textContentType(.password)
-                    .autocorrectionDisabled()
-                    .textInputAutocapitalization(.never)
-                    .padding(Spacing.sm)
-                    .background(AppColors.neutral.opacity(0.1), in: RoundedRectangle(cornerRadius: AppRadius.md))
+                    TextField("https://your-gateway.example.com", text: $urlInput)
+                        .textContentType(.URL)
+                        .keyboardType(.URL)
+                        .autocorrectionDisabled()
+                        .textInputAutocapitalization(.never)
+                        .padding(Spacing.sm)
+                        .background(AppColors.neutral.opacity(0.1), in: RoundedRectangle(cornerRadius: AppRadius.md))
+                }
+
+                // Bearer Token
+                VStack(alignment: .leading, spacing: Spacing.xxs) {
+                    Text("BEARER TOKEN")
+                        .font(AppTypography.micro)
+                        .foregroundStyle(AppColors.neutral)
+
+                    SecureField("Paste token here\u{2026}", text: $tokenInput)
+                        .textContentType(.password)
+                        .autocorrectionDisabled()
+                        .textInputAutocapitalization(.never)
+                        .padding(Spacing.sm)
+                        .background(AppColors.neutral.opacity(0.1), in: RoundedRectangle(cornerRadius: AppRadius.md))
+                }
             }
 
             if let errorMessage {
@@ -46,7 +70,7 @@ struct TokenSetupView: View {
                     .frame(maxWidth: .infinity, alignment: .leading)
             }
 
-            Button(action: saveToken) {
+            Button(action: saveConfig) {
                 Group {
                     if isSaving {
                         ProgressView().tint(.white)
@@ -60,22 +84,24 @@ struct TokenSetupView: View {
             }
             .background(AppColors.primaryAction, in: RoundedRectangle(cornerRadius: AppRadius.lg))
             .foregroundStyle(.white)
-            .disabled(tokenInput.trimmingCharacters(in: .whitespaces).isEmpty || isSaving)
+            .disabled(!canConnect || isSaving)
 
             Spacer()
         }
         .padding(Spacing.xl)
     }
 
-    private func saveToken() {
-        let trimmed = tokenInput.trimmingCharacters(in: .whitespaces)
-        guard !trimmed.isEmpty else { return }
+    private func saveConfig() {
+        let trimmedURL = urlInput.trimmingCharacters(in: .whitespaces)
+        let trimmedToken = tokenInput.trimmingCharacters(in: .whitespaces)
+        guard !trimmedURL.isEmpty, !trimmedToken.isEmpty else { return }
 
         isSaving = true
         errorMessage = nil
 
         do {
-            try keychain.saveToken(trimmed)
+            GatewayConfig.saveBaseURL(trimmedURL)
+            try keychain.saveToken(trimmedToken)
             Haptics.shared.success()
             onTokenSaved()
         } catch {

@@ -34,8 +34,13 @@ struct HomeView: View {
 
                     TokenUsageCard(vm: tokenUsageVM, detailRepository: cronDetailRepository)
 
-                    OutreachStatsCard(vm: outreachVM)
-                    BlogPipelineCard(vm: blogVM)
+                    // Optional cards — only show if data loaded successfully
+                    if outreachVM.data != nil {
+                        OutreachStatsCard(vm: outreachVM)
+                    }
+                    if blogVM.data != nil {
+                        BlogPipelineCard(vm: blogVM)
+                    }
                 }
                 .padding(.horizontal, Spacing.md)
                 .padding(.vertical, Spacing.sm)

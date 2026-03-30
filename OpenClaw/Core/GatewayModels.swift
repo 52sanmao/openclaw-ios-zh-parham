@@ -52,6 +52,7 @@ struct GatewayErrorEnvelope: Decodable, Sendable {
 
 enum GatewayError: LocalizedError {
     case noToken
+    case noBaseURL
     case invalidResponse
     case httpError(Int, body: String)
     case serverError(Int, type: String, message: String)
@@ -61,6 +62,8 @@ enum GatewayError: LocalizedError {
         switch self {
         case .noToken:
             return "No authentication token. Tap Configure to add your Bearer token."
+        case .noBaseURL:
+            return "No gateway URL configured. Go to Settings to configure your gateway."
         case .invalidResponse:
             return "Invalid response from gateway."
         case .httpError(let code, let body):
