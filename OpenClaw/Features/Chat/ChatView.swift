@@ -29,7 +29,9 @@ struct ChatView: View {
                     .padding(.horizontal, Spacing.md)
                     .padding(.vertical, Spacing.sm)
                 }
+                #if os(iOS)
                 .scrollDismissesKeyboard(.interactively)
+                #endif
                 .onChange(of: vm.messages.last?.content) {
                     if let last = vm.messages.last {
                         proxy.scrollTo(last.id, anchor: .bottom)

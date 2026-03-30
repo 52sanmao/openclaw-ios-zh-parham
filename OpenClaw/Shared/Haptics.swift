@@ -1,22 +1,27 @@
+#if canImport(UIKit)
 import UIKit
+#endif
 
-/// Centralized haptic feedback triggers.
+/// Centralized haptic feedback triggers. No-op on macOS.
 @MainActor
 struct Haptics {
     static let shared = Haptics()
 
-    private let notification = UINotificationFeedbackGenerator()
-    private let impact = UIImpactFeedbackGenerator(style: .light)
-
     func success() {
-        notification.notificationOccurred(.success)
+        #if canImport(UIKit)
+        UINotificationFeedbackGenerator().notificationOccurred(.success)
+        #endif
     }
 
     func error() {
-        notification.notificationOccurred(.error)
+        #if canImport(UIKit)
+        UINotificationFeedbackGenerator().notificationOccurred(.error)
+        #endif
     }
 
     func refreshComplete() {
-        impact.impactOccurred()
+        #if canImport(UIKit)
+        UIImpactFeedbackGenerator(style: .light).impactOccurred()
+        #endif
     }
 }

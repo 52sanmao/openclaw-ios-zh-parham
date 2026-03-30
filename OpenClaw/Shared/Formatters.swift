@@ -1,6 +1,10 @@
 import Foundation
 import SwiftUI
+#if canImport(UIKit)
 import UIKit
+#elseif canImport(AppKit)
+import AppKit
+#endif
 
 /// Cached formatters — never create DateFormatter/RelativeDateTimeFormatter in computed properties or view bodies.
 enum Formatters {
@@ -50,10 +54,15 @@ enum Formatters {
         return "\(name) \(version)"
     }
 
-    /// Copy text to pasteboard with haptic feedback. Returns a Task that resets the `copied` binding after 2s.
+    /// Copy text to pasteboard with haptic feedback.
     @MainActor
     static func copyToClipboard(_ text: String, copied: Binding<Bool>? = nil) {
+        #if canImport(UIKit)
         UIPasteboard.general.string = text
+        #elseif canImport(AppKit)
+        NSPasteboard.general.clearContents()
+        NSPasteboard.general.setString(text, forType: .string)
+        #endif
         Haptics.shared.success()
         if let copied {
             copied.wrappedValue = true

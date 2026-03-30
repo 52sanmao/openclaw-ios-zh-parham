@@ -12,12 +12,18 @@
 
 /* Begin PBXFileReference section */
 		D08631062F76FBC800A8CD0F /* OpenClaw.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = OpenClaw.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		D086324A2F7B2B8300A8CD0F /* OpenClaw-Mac.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "OpenClaw-Mac.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
 		D08631082F76FBC800A8CD0F /* OpenClaw */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
 			path = OpenClaw;
+			sourceTree = "<group>";
+		};
+		D086324B2F7B2B8300A8CD0F /* OpenClaw-Mac */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = "OpenClaw-Mac";
 			sourceTree = "<group>";
 		};
 /* End PBXFileSystemSynchronizedRootGroup section */
@@ -31,6 +37,13 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		D08632472F7B2B8300A8CD0F /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
@@ -38,6 +51,7 @@
 			isa = PBXGroup;
 			children = (
 				D08631082F76FBC800A8CD0F /* OpenClaw */,
+				D086324B2F7B2B8300A8CD0F /* OpenClaw-Mac */,
 				D08631072F76FBC800A8CD0F /* Products */,
 			);
 			sourceTree = "<group>";
@@ -46,6 +60,7 @@
 			isa = PBXGroup;
 			children = (
 				D08631062F76FBC800A8CD0F /* OpenClaw.app */,
+				D086324A2F7B2B8300A8CD0F /* OpenClaw-Mac.app */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -76,6 +91,28 @@
 			productReference = D08631062F76FBC800A8CD0F /* OpenClaw.app */;
 			productType = "com.apple.product-type.application";
 		};
+		D08632492F7B2B8300A8CD0F /* OpenClaw-Mac */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = D08632522F7B2B8500A8CD0F /* Build configuration list for PBXNativeTarget "OpenClaw-Mac" */;
+			buildPhases = (
+				D08632462F7B2B8300A8CD0F /* Sources */,
+				D08632472F7B2B8300A8CD0F /* Frameworks */,
+				D08632482F7B2B8300A8CD0F /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			fileSystemSynchronizedGroups = (
+				D086324B2F7B2B8300A8CD0F /* OpenClaw-Mac */,
+			);
+			name = "OpenClaw-Mac";
+			packageProductDependencies = (
+			);
+			productName = "OpenClaw-Mac";
+			productReference = D086324A2F7B2B8300A8CD0F /* OpenClaw-Mac.app */;
+			productType = "com.apple.product-type.application";
+		};
 /* End PBXNativeTarget section */
 
 /* Begin PBXProject section */
@@ -87,6 +124,9 @@
 				LastUpgradeCheck = 2630;
 				TargetAttributes = {
 					D08631052F76FBC800A8CD0F = {
+						CreatedOnToolsVersion = 26.3;
+					};
+					D08632492F7B2B8300A8CD0F = {
 						CreatedOnToolsVersion = 26.3;
 					};
 				};
@@ -109,6 +149,7 @@
 			projectRoot = "";
 			targets = (
 				D08631052F76FBC800A8CD0F /* OpenClaw */,
+				D08632492F7B2B8300A8CD0F /* OpenClaw-Mac */,
 			);
 		};
 /* End PBXProject section */
@@ -121,10 +162,24 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		D08632482F7B2B8300A8CD0F /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
 		D08631022F76FBC800A8CD0F /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		D08632462F7B2B8300A8CD0F /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -319,6 +374,74 @@
 			};
 			name = Release;
 		};
+		D08632532F7B2B8500A8CD0F /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_STYLE = Automatic;
+				COMBINE_HIDPI_IMAGES = YES;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 8FS5PCAXWW;
+				ENABLE_APP_SANDBOX = YES;
+				ENABLE_HARDENED_RUNTIME = YES;
+				ENABLE_PREVIEWS = YES;
+				ENABLE_USER_SELECTED_FILES = readonly;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+				);
+				MACOSX_DEPLOYMENT_TARGET = 15.6;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = "co.uk.appwebdev.OpenClaw-Mac";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				REGISTER_APP_GROUPS = YES;
+				SDKROOT = macosx;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+			};
+			name = Debug;
+		};
+		D08632542F7B2B8500A8CD0F /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_STYLE = Automatic;
+				COMBINE_HIDPI_IMAGES = YES;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 8FS5PCAXWW;
+				ENABLE_APP_SANDBOX = YES;
+				ENABLE_HARDENED_RUNTIME = YES;
+				ENABLE_PREVIEWS = YES;
+				ENABLE_USER_SELECTED_FILES = readonly;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+				);
+				MACOSX_DEPLOYMENT_TARGET = 15.6;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = "co.uk.appwebdev.OpenClaw-Mac";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				REGISTER_APP_GROUPS = YES;
+				SDKROOT = macosx;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+			};
+			name = Release;
+		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
@@ -336,6 +459,15 @@
 			buildConfigurations = (
 				D08631122F76FBC900A8CD0F /* Debug */,
 				D08631132F76FBC900A8CD0F /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		D08632522F7B2B8500A8CD0F /* Build configuration list for PBXNativeTarget "OpenClaw-Mac" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				D08632532F7B2B8500A8CD0F /* Debug */,
+				D08632542F7B2B8500A8CD0F /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;

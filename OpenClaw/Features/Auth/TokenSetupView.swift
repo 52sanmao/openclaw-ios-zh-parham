@@ -40,10 +40,12 @@ struct TokenSetupView: View {
                         .foregroundStyle(AppColors.neutral)
 
                     TextField("https://your-gateway.example.com", text: $urlInput)
+                        #if os(iOS)
                         .textContentType(.URL)
                         .keyboardType(.URL)
-                        .autocorrectionDisabled()
                         .textInputAutocapitalization(.never)
+                        #endif
+                        .autocorrectionDisabled()
                         .padding(Spacing.sm)
                         .background(AppColors.neutral.opacity(0.1), in: RoundedRectangle(cornerRadius: AppRadius.md))
                 }
@@ -55,9 +57,11 @@ struct TokenSetupView: View {
                         .foregroundStyle(AppColors.neutral)
 
                     SecureField("Paste token here\u{2026}", text: $tokenInput)
+                        #if os(iOS)
                         .textContentType(.password)
-                        .autocorrectionDisabled()
                         .textInputAutocapitalization(.never)
+                        #endif
+                        .autocorrectionDisabled()
                         .padding(Spacing.sm)
                         .background(AppColors.neutral.opacity(0.1), in: RoundedRectangle(cornerRadius: AppRadius.md))
                 }
