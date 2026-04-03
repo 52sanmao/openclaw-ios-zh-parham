@@ -2,7 +2,7 @@ import SwiftUI
 
 /// Root navigation — tab bar on iOS, sidebar on macOS.
 struct MainTabView: View {
-    private let keychain: KeychainService
+    let accountStore: AccountStore
     private let client: GatewayClientProtocol
     private let cronDetailRepo: CronDetailRepository
     private let sessionRepo: SessionRepository
@@ -11,9 +11,11 @@ struct MainTabView: View {
     @State private var memoryVM: MemoryViewModel
     @State private var sessionsVM: SessionsViewModel
 
-    init(keychain: KeychainService) {
-        self.keychain = keychain
-        let client = GatewayClient(keychain: keychain)
+    init(accountStore: AccountStore) {
+        self.accountStore = accountStore
+        guard let client = GatewayClient(accountStore: accountStore) else {
+            fatalError("MainTabView created without a configured account")
+        }
         self.client = client
         self.cronDetailRepo = RemoteCronDetailRepository(client: client)
         let sessionRepo = RemoteSessionRepository(client: client)
@@ -40,7 +42,7 @@ struct MainTabView: View {
     private var iosBody: some View {
         TabView {
             Tab("Home", systemImage: "house.fill") {
-                HomeView(keychain: keychain, client: client, cronVM: cronVM, cronDetailRepository: cronDetailRepo)
+                HomeView(accountStore: accountStore, client: client, cronVM: cronVM, cronDetailRepository: cronDetailRepo)
             }
             Tab("Crons", systemImage: "clock.arrow.2.circlepath") {
                 CronsTab(vm: cronVM, detailRepository: cronDetailRepo, client: client)
@@ -93,7 +95,7 @@ struct MainTabView: View {
         } detail: {
             switch selection {
             case .home:
-                HomeView(keychain: keychain, client: client, cronVM: cronVM, cronDetailRepository: cronDetailRepo)
+                HomeView(accountStore: accountStore, client: client, cronVM: cronVM, cronDetailRepository: cronDetailRepo)
             case .crons:
                 CronsTab(vm: cronVM, detailRepository: cronDetailRepo, client: client)
             case .memSkills:
@@ -103,7 +105,7 @@ struct MainTabView: View {
             case .chat:
                 ChatTab(client: client)
             case .settings:
-                SettingsView(keychain: keychain, client: client)
+                SettingsView(accountStore: accountStore, client: client)
             case nil:
                 Text("Select an item")
                     .foregroundStyle(.secondary)

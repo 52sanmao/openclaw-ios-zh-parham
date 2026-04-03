@@ -1,13 +1,16 @@
 import SwiftUI
 
-struct TokenSetupView: View {
-    let keychain: KeychainService
-    let onTokenSaved: () -> Void
+/// Add a new gateway account (used for first setup and adding additional accounts).
+struct AddAccountView: View {
+    var accountStore: AccountStore
+    var onDone: (() -> Void)?
 
-    @State private var urlInput = GatewayConfig.baseURL?.absoluteString ?? ""
+    @State private var nameInput = ""
+    @State private var urlInput = ""
     @State private var tokenInput = ""
     @State private var errorMessage: String?
     @State private var isSaving = false
+    @Environment(\.dismiss) private var dismiss
 
     private var canConnect: Bool {
         !urlInput.trimmingCharacters(in: .whitespaces).isEmpty
@@ -24,21 +27,31 @@ struct TokenSetupView: View {
                 .frame(width: 64, height: 64)
 
             VStack(spacing: Spacing.xs) {
-                Text("Connect to Gateway")
+                Text(accountStore.accounts.isEmpty ? "Connect to Gateway" : "Add Account")
                     .font(AppTypography.screenTitle)
-                Text("Enter your gateway URL and Bearer token to connect.")
+                Text("Enter your gateway URL and Bearer token.")
                     .font(AppTypography.body)
                     .foregroundStyle(AppColors.neutral)
                     .multilineTextAlignment(.center)
             }
 
             VStack(alignment: .leading, spacing: Spacing.md) {
-                // Gateway URL
+                // Name
+                VStack(alignment: .leading, spacing: Spacing.xxs) {
+                    Text("NAME")
+                        .font(AppTypography.micro)
+                        .foregroundStyle(AppColors.neutral)
+                    TextField("My Server", text: $nameInput)
+                        .autocorrectionDisabled()
+                        .padding(Spacing.sm)
+                        .background(AppColors.neutral.opacity(0.1), in: RoundedRectangle(cornerRadius: AppRadius.md))
+                }
+
+                // URL
                 VStack(alignment: .leading, spacing: Spacing.xxs) {
                     Text("GATEWAY URL")
                         .font(AppTypography.micro)
                         .foregroundStyle(AppColors.neutral)
-
                     TextField("https://your-gateway.example.com", text: $urlInput)
                         #if os(iOS)
                         .textContentType(.URL)
@@ -50,12 +63,11 @@ struct TokenSetupView: View {
                         .background(AppColors.neutral.opacity(0.1), in: RoundedRectangle(cornerRadius: AppRadius.md))
                 }
 
-                // Bearer Token
+                // Token
                 VStack(alignment: .leading, spacing: Spacing.xxs) {
                     Text("BEARER TOKEN")
                         .font(AppTypography.micro)
                         .foregroundStyle(AppColors.neutral)
-
                     SecureField("Paste token here\u{2026}", text: $tokenInput)
                         #if os(iOS)
                         .textContentType(.password)
@@ -74,7 +86,7 @@ struct TokenSetupView: View {
                     .frame(maxWidth: .infinity, alignment: .leading)
             }
 
-            Button(action: saveConfig) {
+            Button(action: save) {
                 Group {
                     if isSaving {
                         ProgressView().tint(.white)
@@ -95,19 +107,17 @@ struct TokenSetupView: View {
         .padding(Spacing.xl)
     }
 
-    private func saveConfig() {
-        let trimmedURL = urlInput.trimmingCharacters(in: .whitespaces)
-        let trimmedToken = tokenInput.trimmingCharacters(in: .whitespaces)
-        guard !trimmedURL.isEmpty, !trimmedToken.isEmpty else { return }
-
+    private func save() {
         isSaving = true
         errorMessage = nil
+        let name = nameInput.trimmingCharacters(in: .whitespaces)
+        let finalName = name.isEmpty ? (URL(string: urlInput)?.host() ?? "Gateway") : name
 
         do {
-            GatewayConfig.saveBaseURL(trimmedURL)
-            try keychain.saveToken(trimmedToken)
+            try accountStore.add(name: finalName, url: urlInput, token: tokenInput)
             Haptics.shared.success()
-            onTokenSaved()
+            onDone?()
+            dismiss()
         } catch {
             Haptics.shared.error()
             errorMessage = error.localizedDescription

@@ -8,12 +8,12 @@ struct HomeView: View {
     @State private var tokenUsageVM: TokenUsageViewModel
 
     private let cronVM: CronSummaryViewModel
-    private let keychain: KeychainService
+    private let accountStore: AccountStore
     private let client: GatewayClientProtocol
     private let cronDetailRepository: CronDetailRepository
 
-    init(keychain: KeychainService, client: GatewayClientProtocol, cronVM: CronSummaryViewModel, cronDetailRepository: CronDetailRepository) {
-        self.keychain = keychain
+    init(accountStore: AccountStore, client: GatewayClientProtocol, cronVM: CronSummaryViewModel, cronDetailRepository: CronDetailRepository) {
+        self.accountStore = accountStore
         self.client = client
         self.cronVM = cronVM
         self.cronDetailRepository = cronDetailRepository
@@ -79,7 +79,7 @@ struct HomeView: View {
                             Image(systemName: "wrench.and.screwdriver")
                         }
                         NavigationLink {
-                            SettingsView(keychain: keychain, client: client)
+                            SettingsView(accountStore: accountStore, client: client)
                         } label: {
                             Image(systemName: "gear")
                         }

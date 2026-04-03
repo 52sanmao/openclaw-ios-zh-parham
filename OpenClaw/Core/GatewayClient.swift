@@ -12,46 +12,32 @@ protocol GatewayClientProtocol: Sendable {
     func streamChat(message: String, sessionKey: String) -> AsyncThrowingStream<String, Error>
 }
 
-// MARK: - Gateway URL Storage
-
-enum GatewayConfig {
-    private static let urlKey = "gateway_base_url"
-
-    static var baseURL: URL? {
-        guard let str = UserDefaults.standard.string(forKey: urlKey),
-              let url = URL(string: str) else { return nil }
-        return url
-    }
-
-    static func saveBaseURL(_ urlString: String) {
-        var cleaned = urlString.trimmingCharacters(in: .whitespaces)
-        if cleaned.hasSuffix("/") { cleaned = String(cleaned.dropLast()) }
-        if !cleaned.hasPrefix("http") { cleaned = "https://\(cleaned)" }
-        UserDefaults.standard.set(cleaned, forKey: urlKey)
-    }
-
-    static var isConfigured: Bool { baseURL != nil }
-
-    static var displayURL: String {
-        baseURL?.host() ?? "Not configured"
-    }
-}
-
 // MARK: - Implementation
 
-/// Thread-safe gateway HTTP client.
-/// All stored properties are immutable and Sendable — no @unchecked needed.
+/// Thread-safe gateway HTTP client. Configured with a base URL and token.
 struct GatewayClient: GatewayClientProtocol, Sendable {
     private static let logger = Logger(subsystem: "co.uk.appwebdev.openclaw", category: "Gateway")
 
-    /// Dedicated session with 15-minute timeout for long-running agent calls.
     private static let longRunningSession: URLSession = {
         let config = URLSessionConfiguration.default
         config.timeoutIntervalForRequest = 900
         return URLSession(configuration: config)
     }()
 
-    let keychain: KeychainService
+    private let baseURL: URL
+    private let token: String
+
+    init(baseURL: URL, token: String) {
+        self.baseURL = baseURL
+        self.token = token
+    }
+
+    /// Convenience init from AccountStore.
+    init?(accountStore: AccountStore) {
+        guard let url = accountStore.activeBaseURL(),
+              let token = accountStore.activeToken() else { return nil }
+        self.init(baseURL: url, token: token)
+    }
 
     // MARK: - GET /stats/*
 
@@ -162,13 +148,12 @@ struct GatewayClient: GatewayClientProtocol, Sendable {
     }
 
     private func requireToken() throws -> String {
-        guard let token = keychain.readToken() else { throw GatewayError.noToken }
+        guard !token.isEmpty else { throw GatewayError.noToken }
         return token
     }
 
     private func buildURL(_ path: String) throws -> URL {
-        guard let base = GatewayConfig.baseURL else { throw GatewayError.noBaseURL }
-        guard let url = URL(string: "\(base.absoluteString)/\(path)") else { throw GatewayError.invalidResponse }
+        guard let url = URL(string: "\(baseURL.absoluteString)/\(path)") else { throw GatewayError.invalidResponse }
         return url
     }
 

@@ -1,27 +1,17 @@
 import SwiftUI
 
-/// Root view: shows TokenSetupView until both gateway URL and token are configured,
-/// then transitions to MainTabView with a smooth animation.
+/// Root view: shows setup when no accounts exist, main app when configured.
+/// Account switching triggers a full app rebuild via `id:`.
 struct ContentView: View {
-    private let keychain: KeychainService
-    @State private var isAuthenticated: Bool
-
-    init() {
-        let keychain = KeychainService()
-        self.keychain = keychain
-        _isAuthenticated = State(initialValue: keychain.hasToken && GatewayConfig.isConfigured)
-    }
+    @State private var accountStore = AccountStore()
 
     var body: some View {
         Group {
-            if isAuthenticated {
-                MainTabView(keychain: keychain)
+            if accountStore.isConfigured {
+                MainTabView(accountStore: accountStore)
+                    .id(accountStore.activeAccountId)
             } else {
-                TokenSetupView(keychain: keychain) {
-                    withAnimation(.easeInOut) {
-                        isAuthenticated = true
-                    }
-                }
+                AddAccountView(accountStore: accountStore)
             }
         }
     }

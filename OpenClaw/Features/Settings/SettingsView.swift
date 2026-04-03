@@ -1,48 +1,86 @@
 import SwiftUI
 
 struct SettingsView: View {
-    let keychain: KeychainService
+    var accountStore: AccountStore
     var client: GatewayClientProtocol?
 
-    @State private var showTokenSetup = false
+    @State private var showAddAccount = false
     @State private var isTesting = false
     @State private var testResult: TestResult?
+    @State private var accountToDelete: GatewayAccount?
 
     var body: some View {
         List {
-            // Auth
-            Section {
-                HStack(spacing: Spacing.xs) {
-                    Image(systemName: keychain.hasToken ? "lock.fill" : "lock.open")
-                        .foregroundStyle(keychain.hasToken ? AppColors.success : AppColors.danger)
-                    Text("Bearer Token")
-                    Spacer()
-                    if keychain.hasToken {
-                        Text("Configured")
-                            .font(AppTypography.caption)
+            // Active account
+            if let active = accountStore.activeAccount {
+                Section {
+                    HStack(spacing: Spacing.xs) {
+                        Image(systemName: "lock.fill")
                             .foregroundStyle(AppColors.success)
-                    } else {
-                        Text("Not Set")
-                            .font(AppTypography.caption)
-                            .foregroundStyle(AppColors.danger)
+                        VStack(alignment: .leading, spacing: Spacing.xxs) {
+                            Text(active.name)
+                                .font(AppTypography.body)
+                                .fontWeight(.medium)
+                            Text(active.displayURL)
+                                .font(AppTypography.micro)
+                                .foregroundStyle(AppColors.neutral)
+                        }
+                        Spacer()
+                        Text("Active")
+                            .font(AppTypography.nano)
+                            .padding(.horizontal, Spacing.xxs)
+                            .padding(.vertical, 2)
+                            .background(AppColors.success.opacity(0.15), in: Capsule())
+                            .foregroundStyle(AppColors.success)
+                    }
+                } header: {
+                    Text("Active Account")
+                }
+            }
+
+            // All accounts (switch)
+            if accountStore.accounts.count > 1 {
+                Section("Switch Account") {
+                    ForEach(accountStore.accounts) { account in
+                        Button {
+                            accountStore.setActive(account.id)
+                        } label: {
+                            HStack(spacing: Spacing.xs) {
+                                Image(systemName: account.id == accountStore.activeAccountId ? "checkmark.circle.fill" : "circle")
+                                    .foregroundStyle(account.id == accountStore.activeAccountId ? AppColors.success : AppColors.neutral)
+                                VStack(alignment: .leading, spacing: Spacing.xxs) {
+                                    Text(account.name)
+                                        .font(AppTypography.body)
+                                    Text(account.displayURL)
+                                        .font(AppTypography.micro)
+                                        .foregroundStyle(AppColors.neutral)
+                                }
+                                Spacer()
+                            }
+                        }
+                        .buttonStyle(.plain)
+                        .swipeActions(edge: .trailing) {
+                            Button(role: .destructive) {
+                                accountToDelete = account
+                            } label: {
+                                Label("Delete", systemImage: "trash")
+                            }
+                        }
                     }
                 }
+            }
 
+            // Add account
+            Section {
                 Button {
-                    showTokenSetup = true
+                    showAddAccount = true
                 } label: {
-                    Text(keychain.hasToken ? "Replace Token\u{2026}" : "Set Token\u{2026}")
+                    Label("Add Account", systemImage: "plus.circle")
                 }
-            } header: {
-                Text("Authentication")
-            } footer: {
-                Text("Stored in the device Keychain. Never written to UserDefaults or iCloud.")
-                    .font(AppTypography.micro)
             }
 
             // Gateway info
             Section("Gateway") {
-                LabeledContent("URL", value: GatewayConfig.displayURL)
                 LabeledContent("Agent", value: AppConstants.agentId.capitalized)
             }
 
@@ -55,7 +93,7 @@ struct SettingsView: View {
                         if isTesting { ProgressView().scaleEffect(0.8) }
                     }
                 }
-                .disabled(isTesting || !keychain.hasToken)
+                .disabled(isTesting || !accountStore.isConfigured)
 
                 if let result = testResult {
                     Label(result.message, systemImage: result.isSuccess ? "checkmark.circle.fill" : "xmark.circle.fill")
@@ -65,23 +103,33 @@ struct SettingsView: View {
                 }
             } header: {
                 Text("Diagnostics")
-            } footer: {
-                Text("Sends a live request to the gateway and shows the server response.")
-                    .font(AppTypography.micro)
             }
 
-            // App info
+            // About
             Section("About") {
                 LabeledContent("App", value: "OpenClaw")
-                LabeledContent("Platform", value: "iOS 17+")
+                LabeledContent("Accounts", value: "\(accountStore.accounts.count)")
             }
         }
         .listStyle(.insetGrouped)
         .navigationTitle("Settings")
         .navigationBarTitleDisplayMode(.inline)
-        .sheet(isPresented: $showTokenSetup) {
-            TokenSetupView(keychain: keychain) {
-                showTokenSetup = false
+        .sheet(isPresented: $showAddAccount) {
+            AddAccountView(accountStore: accountStore)
+        }
+        .alert("Delete Account?", isPresented: Binding(
+            get: { accountToDelete != nil },
+            set: { if !$0 { accountToDelete = nil } }
+        )) {
+            Button("Delete", role: .destructive) {
+                if let account = accountToDelete {
+                    accountStore.delete(account.id)
+                }
+            }
+            Button("Cancel", role: .cancel) { accountToDelete = nil }
+        } message: {
+            if let account = accountToDelete {
+                Text("Remove \"\(account.name)\"? The token will be deleted from Keychain.")
             }
         }
     }
@@ -89,10 +137,10 @@ struct SettingsView: View {
     private func runConnectionTest() {
         isTesting = true
         testResult = nil
-        let testClient = client ?? GatewayClient(keychain: keychain)
+        guard let client else { return }
         Task {
             do {
-                let dto: SystemStatsDTO = try await testClient.stats("stats/system")
+                let dto: SystemStatsDTO = try await client.stats("stats/system")
                 testResult = TestResult(
                     isSuccess: true,
                     message: "OK \u{2014} CPU \(String(format: "%.1f", dto.cpuPercent))%  RAM \(dto.ramPercent)%"
