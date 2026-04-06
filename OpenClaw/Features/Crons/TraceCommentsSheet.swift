@@ -74,9 +74,7 @@ struct TraceCommentsSheet: View {
 
                 if let error = submitError {
                     Section {
-                        Label(error.localizedDescription, systemImage: "xmark.circle.fill")
-                            .font(AppTypography.caption)
-                            .foregroundStyle(AppColors.danger)
+                        ErrorLabel(error: error)
                     }
                 }
             }

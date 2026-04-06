@@ -134,9 +134,7 @@ struct CommentSheet: View {
 
             if let error = vm.pageCommentError {
                 Section {
-                    Label(error.localizedDescription, systemImage: "xmark.circle.fill")
-                        .font(AppTypography.caption)
-                        .foregroundStyle(AppColors.danger)
+                    ErrorLabel(error: error)
                 }
             }
         }

@@ -109,7 +109,7 @@ struct TraceStepRow: View {
                 HStack(spacing: Spacing.xs) {
                     // Model pill with provider icon (separate from metadata pills)
                     if let model = step.model {
-                        ModelPill(model: model)
+                        ModelPill(model: model, provider: step.provider)
                     }
                     ForEach(pills, id: \.label) { pill in
                         HStack(spacing: Spacing.xxs) {

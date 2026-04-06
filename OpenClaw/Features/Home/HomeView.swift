@@ -6,9 +6,10 @@ struct HomeView: View {
     @State private var blogVM: BlogPipelineViewModel
     @State private var commandsVM: CommandsViewModel
     @State private var tokenUsageVM: TokenUsageViewModel
+    @State private var showAccountSwitcher = false
 
+    @Bindable private var accountStore: AccountStore
     private let cronVM: CronSummaryViewModel
-    private let accountStore: AccountStore
     private let client: GatewayClientProtocol
     private let cronDetailRepository: CronDetailRepository
 
@@ -57,18 +58,27 @@ struct HomeView: View {
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .principal) {
-                    DetailTitleView(title: "Home") {
+                    DetailTitleView(title: accountStore.activeAccount?.name ?? "Home") {
                         homeSubtitle
                     }
                 }
                 ToolbarItem(placement: .navigationBarLeading) {
-                    NavigationLink {
-                        ChatTab(client: client)
-                    } label: {
-                        Image("openclaw")
-                            .resizable()
-                            .aspectRatio(contentMode: .fit)
-                            .frame(width: 24, height: 24)
+                    HStack(spacing: Spacing.sm) {
+                        NavigationLink {
+                            ChatTab(client: client)
+                        } label: {
+                            Image("openclaw")
+                                .resizable()
+                                .aspectRatio(contentMode: .fit)
+                                .frame(width: 24, height: 24)
+                        }
+                        if accountStore.accounts.count > 1 {
+                            Button {
+                                showAccountSwitcher = true
+                            } label: {
+                                Image(systemName: "server.rack")
+                            }
+                        }
                     }
                 }
                 ToolbarItem(placement: .navigationBarTrailing) {
@@ -98,6 +108,14 @@ struct HomeView: View {
             outreachVM.start()
             blogVM.start()
             tokenUsageVM.start()
+        }
+        .confirmationDialog("Switch Account", isPresented: $showAccountSwitcher, titleVisibility: .visible) {
+            ForEach(accountStore.accounts) { account in
+                Button(account.name + (account.id == accountStore.activeAccountId ? " ✓" : "")) {
+                    guard account.id != accountStore.activeAccountId else { return }
+                    accountStore.setActive(account.id)
+                }
+            }
         }
     }
 

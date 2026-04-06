@@ -66,9 +66,7 @@ struct SubmitEditsSheet: View {
 
                 if let error = vm.submitError {
                     Section {
-                        Label(error.localizedDescription, systemImage: "xmark.circle.fill")
-                            .font(AppTypography.caption)
-                            .foregroundStyle(AppColors.danger)
+                        ErrorLabel(error: error)
                     }
                 }
             }

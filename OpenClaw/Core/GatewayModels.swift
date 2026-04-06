@@ -57,6 +57,7 @@ enum GatewayError: LocalizedError {
     case httpError(Int, body: String)
     case serverError(Int, type: String, message: String)
     case emptyContent
+    case connectionLost
 
     var errorDescription: String? {
         switch self {
@@ -72,6 +73,8 @@ enum GatewayError: LocalizedError {
             return "Gateway HTTP \(code): \(message)"
         case .emptyContent:
             return "Gateway returned an empty response."
+        case .connectionLost:
+            return "Connection lost — the agent is still running on the server. Check back shortly."
         }
     }
 }

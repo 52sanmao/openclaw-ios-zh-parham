@@ -106,9 +106,7 @@ struct CommandResultSheet: View {
                     }
 
                     if let error = vm.investigateError {
-                        Label(error.localizedDescription, systemImage: "xmark.circle.fill")
-                            .font(AppTypography.caption)
-                            .foregroundStyle(AppColors.danger)
+                        ErrorLabel(error: error)
                     }
                 }
                 .padding(Spacing.md)

@@ -80,7 +80,17 @@ struct GatewayClient: GatewayClientProtocol, Sendable {
         req.httpBody = try JSONEncoder().encode(request)
 
         Self.logger.debug("POST /v1/chat/completions (session: \(sessionKey))")
-        let (data, response) = try await Self.longRunningSession.data(for: req)
+
+        let data: Data
+        let response: URLResponse
+        do {
+            (data, response) = try await Self.longRunningSession.data(for: req)
+        } catch is CancellationError {
+            throw GatewayError.connectionLost
+        } catch let urlError as URLError where urlError.code == .cancelled || urlError.code == .networkConnectionLost {
+            throw GatewayError.connectionLost
+        }
+
         try validateHTTPResponse(response, data: data, path: "v1/chat/completions")
         return try JSONDecoder().decode(ChatCompletionResponse.self, from: data)
     }
