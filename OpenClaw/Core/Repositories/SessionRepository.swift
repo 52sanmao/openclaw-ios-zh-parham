@@ -28,7 +28,7 @@ final class RemoteSessionRepository: SessionRepository {
 
             let entries = response.sessions.map { dto in
                 let entry = SessionEntry(dto: dto)
-                logger.debug("Session \(dto.key) → kind: \(String(describing: entry.kind))")
+                logger.debug("Session \(dto.key) → kind: \(String(describing: entry.kind)), model: \(dto.model ?? "nil")")
                 return entry
             }
 
