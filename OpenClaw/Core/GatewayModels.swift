@@ -2,8 +2,8 @@ import Foundation
 
 /// App-level constants — agent name will be dynamic in the future.
 enum AppConstants {
-    static let agentId = "orchestrator"
-    static let workspaceRoot = "~/.openclaw/workspace/\(agentId)/"
+    static let agentId = "main"
+    static let workspaceRoot = "~/.openclaw/workspace/"
 }
 
 /// Well-known session keys.
