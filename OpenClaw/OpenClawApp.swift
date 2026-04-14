@@ -9,6 +9,10 @@ import SwiftUI
 
 @main
 struct OpenClawApp: App {
+    init() {
+        ChineseLocalization.install()
+    }
+
     var body: some Scene {
         WindowGroup {
             ContentView()
