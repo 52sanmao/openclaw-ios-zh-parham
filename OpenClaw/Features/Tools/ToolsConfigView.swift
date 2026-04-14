@@ -85,17 +85,18 @@ struct ToolsConfigView: View {
     
             ForEach(config.groups, id: \.id) { toolGroup in
                 Section {
-                    ForEach(toolGroup.tools, id: \.id) { tool in
-                        VStack(alignment: .leading, spacing: Spacing.xxs) {
-                            Text(tool.name)
-                                .font(AppTypography.captionMono)
-                            if !tool.description.isEmpty {
-                                Text(tool.description)
-                                    .font(AppTypography.micro)
-                                    .foregroundStyle(AppColors.neutral)
+                    VStack(alignment: .leading, spacing: Spacing.xs) {
+                        ForEach(Array(toolGroup.tools.enumerated()), id: \.element.id) { _, tool in
+                            VStack(alignment: .leading, spacing: Spacing.xxs) {
+                                Text(tool.name)
+                                    .font(AppTypography.captionMono)
+                                if !tool.description.isEmpty {
+                                    Text(tool.description)
+                                        .font(AppTypography.micro)
+                                        .foregroundStyle(AppColors.neutral)
+                                }
                             }
                         }
-                        .padding(.vertical, Spacing.xxs)
                     }
                 } header: {
                     Label(toolGroup.name, systemImage: toolGroup.icon)
