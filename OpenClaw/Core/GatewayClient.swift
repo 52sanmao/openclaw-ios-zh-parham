@@ -33,6 +33,7 @@ struct GatewayClient: GatewayClientProtocol, Sendable {
     }
 
     /// Convenience init from AccountStore.
+    @MainActor
     init?(accountStore: AccountStore) {
         guard let url = accountStore.activeBaseURL(),
               let token = accountStore.activeToken() else { return nil }

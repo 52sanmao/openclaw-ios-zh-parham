@@ -45,59 +45,61 @@ struct ToolsConfigView: View {
 
     @ViewBuilder
     private func nativeToolsSection(_ config: ToolsConfig) -> some View {
-        Section {
-            HStack {
-                Text("Profile")
-                    .font(AppTypography.caption)
-                    .foregroundStyle(AppColors.neutral)
-                Spacer()
-                Text(config.profile.capitalized)
-                    .font(AppTypography.captionBold)
-                    .padding(.horizontal, Spacing.xs)
-                    .padding(.vertical, 2)
-                    .background(config.profileColor.opacity(0.15), in: Capsule())
-                    .foregroundStyle(config.profileColor)
-            }
-
-            if !config.allow.isEmpty {
-                LabeledContent("Allow") {
-                    Text(config.allow.joined(separator: ", "))
-                        .font(AppTypography.micro)
-                        .foregroundStyle(AppColors.success)
-                }
-            }
-            if !config.deny.isEmpty {
-                LabeledContent("Deny") {
-                    Text(config.deny.joined(separator: ", "))
-                        .font(AppTypography.micro)
-                        .foregroundStyle(AppColors.danger)
-                }
-            }
-        } header: {
-            HStack {
-                Text("Native Tools")
-                let count = config.groups.reduce(0) { $0 + $1.tools.count }
-                Text("(\(count))")
-                    .foregroundStyle(AppColors.neutral)
-            }
-        }
-
-        ForEach(config.groups) { group in
+        Group {
             Section {
-                ForEach(group.tools) { tool in
-                    VStack(alignment: .leading, spacing: Spacing.xxs) {
-                        Text(tool.name)
-                            .font(AppTypography.captionMono)
-                        if !tool.description.isEmpty {
-                            Text(tool.description)
-                                .font(AppTypography.micro)
-                                .foregroundStyle(AppColors.neutral)
-                        }
+                HStack {
+                    Text("Profile")
+                        .font(AppTypography.caption)
+                        .foregroundStyle(AppColors.neutral)
+                    Spacer()
+                    Text(config.profile.capitalized)
+                        .font(AppTypography.captionBold)
+                        .padding(.horizontal, Spacing.xs)
+                        .padding(.vertical, 2)
+                        .background(config.profileColor.opacity(0.15), in: Capsule())
+                        .foregroundStyle(config.profileColor)
+                }
+
+                if !config.allow.isEmpty {
+                    LabeledContent("Allow") {
+                        Text(config.allow.joined(separator: ", "))
+                            .font(AppTypography.micro)
+                            .foregroundStyle(AppColors.success)
                     }
-                    .padding(.vertical, Spacing.xxs)
+                }
+                if !config.deny.isEmpty {
+                    LabeledContent("Deny") {
+                        Text(config.deny.joined(separator: ", "))
+                            .font(AppTypography.micro)
+                            .foregroundStyle(AppColors.danger)
+                    }
                 }
             } header: {
-                Label(group.name, systemImage: group.icon)
+                HStack {
+                    Text("Native Tools")
+                    let count = config.groups.reduce(0) { $0 + $1.tools.count }
+                    Text("(\(count))")
+                        .foregroundStyle(AppColors.neutral)
+                }
+            }
+    
+            ForEach(config.groups, id: \.id) { toolGroup in
+                Section {
+                    ForEach(toolGroup.tools, id: \.id) { tool in
+                        VStack(alignment: .leading, spacing: Spacing.xxs) {
+                            Text(tool.name)
+                                .font(AppTypography.captionMono)
+                            if !tool.description.isEmpty {
+                                Text(tool.description)
+                                    .font(AppTypography.micro)
+                                    .foregroundStyle(AppColors.neutral)
+                            }
+                        }
+                        .padding(.vertical, Spacing.xxs)
+                    }
+                } header: {
+                    Label(toolGroup.name, systemImage: toolGroup.icon)
+                }
             }
         }
     }
